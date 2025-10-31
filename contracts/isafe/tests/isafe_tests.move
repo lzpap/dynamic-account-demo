@@ -1,31 +1,29 @@
 #[test_only]
 module isafe::isafe_tests;
 
-use iota::account::{create_auth_info_v1_for_testing, has_auth_info_v1};
+use iota::account::{create_auth_info_v1_for_testing, has_auth_info_v1, AuthenticatorInfoV1};
 use iota::auth_context;
-use iota::test_scenario;
+use iota::test_scenario::{Self, Scenario};
 use isafe::account::Account;
 use isafe::dynamic_auth;
+
+#[error(code = 0)]
+const EInvalidMembersAndWeightsLength: vector<u8> =
+    b"The members and weights vectors must have the same length.";
 
 #[test]
 fun test_creation() {
     let mut scenario = test_scenario::begin(@0xA);
 
     // Create an iSafe account with 3 members and an authenticator.
-    dynamic_auth::create_account_builder()
-        .add_member_to_builder(@0x1, 1)
-        .add_member_to_builder(@0x2, 2)
-        .add_member_to_builder(@0x3, 3)
-        .set_threshold_in_builder(3)
-        .set_guardian_in_builder(vector[0, 1, 2])
-        .add_authenticator_to_builder(
-            create_auth_info_v1_for_testing(
-                @0xABBA,
-                b"dummy".to_ascii_string(),
-                b"dummy_function".to_ascii_string(),
-            ),
-        )
-        .build_and_publish(scenario.ctx());
+    setup_account(
+        &mut scenario,
+        vector[@0x1, @0x2, @0x3],
+        vector[1, 2, 3],
+        3,
+        option::some(vector[0, 1, 2]),
+        dummy_authenticator()
+    );
     // Advance the scenario to the next transaction.
     // account object shall be shared.
     scenario.next_tx(@0x1);
@@ -51,20 +49,14 @@ fun test_approval_flow_not_enough_approvals() {
     let mut scenario = test_scenario::begin(@0xA);
 
     // Create an iSafe account with 3 members and an authenticator.
-    dynamic_auth::create_account_builder()
-        .add_member_to_builder(@0x1, 1)
-        .add_member_to_builder(@0x2, 2)
-        .add_member_to_builder(@0x3, 3)
-        .set_threshold_in_builder(2)
-        .set_guardian_in_builder(vector[0, 1, 2])
-        .add_authenticator_to_builder(
-            create_auth_info_v1_for_testing(
-                @0xABBA,
-                b"dummy".to_ascii_string(),
-                b"dummy_function".to_ascii_string(),
-            ),
-        )
-        .build_and_publish(scenario.ctx());
+    setup_account(
+        &mut scenario,
+        vector[@0x1, @0x2, @0x3],
+        vector[1, 2, 3],
+        3,
+        option::some(vector[0, 1, 2]),
+        dummy_authenticator()
+    );
 
     // 0x1 submits a tx proposal
     scenario.next_tx(@0x1);
@@ -99,20 +91,14 @@ fun test_approval_flow() {
     let mut scenario = test_scenario::begin(@0xA);
 
     // Create an iSafe account with 3 members and an authenticator.
-    dynamic_auth::create_account_builder()
-        .add_member_to_builder(@0x1, 1)
-        .add_member_to_builder(@0x2, 2)
-        .add_member_to_builder(@0x3, 3)
-        .set_threshold_in_builder(4)
-        .set_guardian_in_builder(vector[0, 1, 2])
-        .add_authenticator_to_builder(
-            create_auth_info_v1_for_testing(
-                @0xABBA,
-                b"dummy".to_ascii_string(),
-                b"dummy_function".to_ascii_string(),
-            ),
-        )
-        .build_and_publish(scenario.ctx());
+    setup_account(
+        &mut scenario,
+        vector[@0x1, @0x2, @0x3],
+        vector[1, 2, 3],
+        3,
+        option::some(vector[0, 1, 2]),
+        dummy_authenticator()
+    );
 
     // 0x1 submits a tx proposal
     scenario.next_tx(@0x1);
@@ -155,6 +141,40 @@ fun test_approval_flow() {
     dynamic_auth::authenticate(&account, &dummy_auth_context, &proposed_tx_context);
     test_scenario::return_shared(account);
     scenario.end();
+}
+
+fun setup_account(
+    scenario: &mut Scenario,
+    members: vector<address>,
+    weights: vector<u64>,
+    threshold: u64,
+    guardian: Option<vector<u8>>,
+    authenticator: AuthenticatorInfoV1,
+) {
+    // Create an iSafe account with 3 members and an authenticator.
+    let mut builder = dynamic_auth::create_account_builder()
+        .add_authenticator_to_builder(authenticator);
+    
+    assert!(vector::length(&members) == vector::length(&weights), EInvalidMembersAndWeightsLength);
+    vector::zip_do!(members, weights, |addr, weight| {
+        builder = builder.add_member_to_builder(addr, weight);
+    });
+
+    builder = builder.set_threshold_in_builder(threshold);
+
+    if (option::is_some(&guardian)) {
+        builder = builder.set_guardian_in_builder(guardian.destroy_some());
+    };
+
+    builder.build_and_publish(scenario.ctx());
+}
+
+fun dummy_authenticator(): AuthenticatorInfoV1 {
+    create_auth_info_v1_for_testing(
+        @0xABBA,
+        b"dummy".to_ascii_string(),
+        b"dummy_function".to_ascii_string(),
+    )
 }
 
 /*
