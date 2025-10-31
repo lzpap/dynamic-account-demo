@@ -63,10 +63,12 @@ public fun create_ticket_with_default_authenticator<T: drop>(
 #[allow(lint(share_owned))]
 // Consume AccountTicket and share the account object publicly.
 // Since Accountticket must come from the same tx, we know the account is not owned by anyone else yet.
-public fun create_account_from_ticket(ticket: AccountTicket) {
+public fun create_account_from_ticket(ticket: AccountTicket): address {
     let AccountTicket { account } = ticket;
+    let account_address = account.borrow_id().to_address();
     assert!(has_auth_info_v1(account.borrow_id()), ENoAuthenticatorAttached);
     transfer::public_share_object(account);
+    account_address
 }
 
 // An AccountTicket can only be created by a trusted package that defines the app key T.
@@ -185,6 +187,11 @@ public fun borrow_id(account: &Account): &UID {
 /// Returns the account address.
 public fun get_address(self: &Account): address {
     self.id.to_address()
+}
+
+// Returns the authenticator info attached to the account
+public fun get_authenticator(self: &Account): &AuthenticatorInfoV1 {
+    iota::account::borrow_auth_info_v1(&self.id)
 }
 
 // ---------------------------------------- Utilities ----------------------------------------

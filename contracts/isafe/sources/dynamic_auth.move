@@ -4,8 +4,9 @@ use iota::account::AuthenticatorInfoV1;
 use iota::auth_context::AuthContext;
 use iota::dynamic_field;
 use isafe::account::{Account, ensure_tx_sender_is_account, attach_auth_info_v1};
-use isafe::members::{Self, Members};
+use isafe::members::{Self, Members, Member};
 use isafe::transactions::{Self, Transactions, add_approval};
+use iota::event::emit;
 
 // -------------------------------- Errors --------------------------------
 
@@ -21,6 +22,81 @@ const EThresholdNotEnough: vector<u8> =
 #[error(code = 4)]
 const ETransactionDoesNotHaveSufficientApprovals: vector<u8> =
     b"The transaction does not have sufficient approvals.";
+
+// --------------------------------------- Events ---------------------------------------
+
+/// An event emitted when a new account is created.
+public struct AccountCreatedEvent has copy, drop, store {
+    account: address,
+    members: vector<Member>,
+    threshold: u64,
+    guardian: vector<u8>,
+    authenticator: AuthenticatorInfoV1
+}
+
+// An event emitted when a member is added to the account.
+public struct MemberAddedEvent has copy, drop, store {
+    account: address,
+    member: Member,
+}
+
+// An event emitted when a member is removed from the account.
+public struct MemberRemovedEvent has copy, drop, store {
+    account: address,
+    member: Member,
+}
+
+// An event emitted when a member's weight is updated.
+public struct MemberWeightUpdatedEvent has copy, drop, store {
+    account: address,
+    member: Member,
+    old_weight: u64,
+    new_weight: u64,
+}
+
+// An event emitted when the account threshold is changed.
+public struct ThresholdChangedEvent has copy, drop, store {
+    account: address,
+    old_threshold: u64,
+    new_threshold: u64,
+}
+
+// An event emitted when the account guardian is changed.
+public struct GuardianChangedEvent has copy, drop, store {
+    account: address,
+    old_guardian: vector<u8>,
+    new_guardian: vector<u8>,
+}
+
+// An event emitted when a transaction is proposed.
+public struct TransactionProposedEvent has copy, drop, store {
+    account: address,
+    transaction_digest: vector<u8>,
+    proposer: address,
+}
+
+// An event emitted when a transaction is approved by a member.
+public struct TransactionApprovedEvent has copy, drop, store {
+    account: address,
+    transaction_digest: vector<u8>,
+    approver: address,
+    approver_weight: u64,
+    total_approver_weight: u64,
+}
+
+// An event emitted when a transaction is approved by enough members.
+public struct TransactionApprovalThresholdReachedEvent has copy, drop, store {
+    account: address,
+    transaction_digest: vector<u8>,
+    total_approver_weight: u64,
+    threshold: u64,
+}
+
+// An event emitted when a transaction is removed.
+public struct TransactionRemovedEvent has copy, drop, store {
+    account: address,
+    transaction_digest: vector<u8>,
+}
 
 // ---------------------------------- App Key ----------------------------------
 
@@ -39,6 +115,20 @@ public struct GuardianKey has copy, drop, store {}
 
 // --------------------------------------- Account Management ---------------------------------------
 
+// Add a member to the account
+public fun add_member(self: &mut Account, addr: address, weight: u64, ctx: &mut TxContext) {
+    // Adding a member requires the transaction to be initiated by the account itself.
+    ensure_tx_sender_is_account(self, ctx);
+
+    let members: &mut Members = self.borrow_dynamic_field_mut(members_key(), AppKey {});
+    members.add_member(addr, weight);
+
+    emit(MemberAddedEvent {
+        account: self.get_address(),
+        member: members::create_member(addr, weight),
+    });
+}
+
 // Remove a member from the account
 public fun remove_member(self: &mut Account, addr: address, ctx: &mut TxContext) {
     // Removing a member requires the transaction to be initiated by the account itself.
@@ -50,18 +140,44 @@ public fun remove_member(self: &mut Account, addr: address, ctx: &mut TxContext)
 
     let weight_to_remove = members.borrow(addr).weight();
     assert!(members.total_weight() - weight_to_remove >= account_threshold, EThresholdNotEnough);
-    members.remove_member(addr);
+    let removed = members.remove_member(addr);
+
+    emit(MemberRemovedEvent{
+        account: self.get_address(),
+        member: removed
+    })
 }
 
-// Add a member to the account
-public fun add_member(self: &mut Account, addr: address, weight: u64, ctx: &mut TxContext) {
-    // Adding a member requires the transaction to be initiated by the account itself.
+// Update a member's weight
+public fun update_member_weight(
+    self: &mut Account,
+    addr: address,
+    new_weight: u64,
+    ctx: &mut TxContext,
+) {
+    // Updating a member's weight requires the transaction to be initiated by the account itself.
     ensure_tx_sender_is_account(self, ctx);
 
+    let account_threshold = threshold(self);
+
     let members: &mut Members = self.borrow_dynamic_field_mut(members_key(), AppKey {});
-    members.add_member(addr, weight);
+
+    // the total weight of the account must be >= threshold after the weight update
+    let current_weight = members.borrow(addr).weight();
+    let new_total_weight = members.total_weight() - current_weight + new_weight; 
+    assert!(new_total_weight >= account_threshold, EThresholdNotEnough);
+
+    members.set_member_weight(addr, new_weight);
+
+    emit(MemberWeightUpdatedEvent {
+        account: self.get_address(),
+        member: members::create_member(addr, new_weight),
+        old_weight: current_weight,
+        new_weight,
+    });
 }
 
+// Set a new threshold for the account
 public fun set_threshold(self: &mut Account, new_threshold: u64, ctx: &mut TxContext) {
     // Setting a new threshold requires the transaction to be initiated by the account itself.
     ensure_tx_sender_is_account(self, ctx);
@@ -71,9 +187,22 @@ public fun set_threshold(self: &mut Account, new_threshold: u64, ctx: &mut TxCon
     assert!(new_threshold > 0, EThresholdTooLow);
     assert!(new_threshold <= total_weight, EThresholdTooHigh);
 
-    *self.borrow_dynamic_field_mut(threshold_key(), AppKey {}) = new_threshold;
+    let threshold_ref: &mut u64 = self.borrow_dynamic_field_mut(threshold_key(), AppKey {});
+
+    let old_threshold = *threshold_ref;
+    *threshold_ref = new_threshold;
+
+    emit(ThresholdChangedEvent{
+        account: self.get_address(),
+        old_threshold: old_threshold,
+        new_threshold,
+    });
+
+    // TODO: if threshold was lowered and there are pending transactions that are now approved, emit events for them?
+    //       We'd need to keep a list of pending transactions, since we can't iterate over the table.
 }
 
+// Set a new guardian for the account
 public fun set_guardian(self: &mut Account, new_guardian: vector<u8>, ctx: &mut TxContext) {
     // Setting a new guardian requires the transaction to be initiated by the account itself.
     ensure_tx_sender_is_account(self, ctx);
@@ -83,8 +212,18 @@ public fun set_guardian(self: &mut Account, new_guardian: vector<u8>, ctx: &mut 
         return
     };
 
-    *self.borrow_dynamic_field_mut(guardian_key(), AppKey {}) = new_guardian;
+    let guardian_ref: &mut vector<u8> = self.borrow_dynamic_field_mut(guardian_key(), AppKey {});
+    let old_guardian = *guardian_ref;
+    *guardian_ref = new_guardian;
+
+    emit(GuardianChangedEvent{
+        account: self.get_address(),
+        old_guardian,
+        new_guardian,
+    });
 }
+
+// TODO rotate authenticator
 
 // --------------------------------------- Authenticator ---------------------------------------
 /// A transaction authenticator.
@@ -121,6 +260,12 @@ public fun propose_transaction(
 
     // Store the transaction.
     transactions_mut(self).add(transaction_digest, member_address);
+
+    emit(TransactionProposedEvent {
+        account: self.get_address(),
+        transaction_digest,
+        proposer: member_address,
+    });
 }
 
 /// Approves a proposed transaction.
@@ -137,6 +282,27 @@ public fun approve_transaction(
 
     // Approve the transaction.
     transaction.add_approval(member_address);
+
+    let total_approver_weight = total_approves(self, transaction_digest);
+
+    emit(TransactionApprovedEvent {
+        account: self.get_address(),
+        transaction_digest,
+        approver: member_address,
+        approver_weight: members(self).borrow(member_address).weight(),
+        total_approver_weight: total_approver_weight,
+    });
+
+    if (total_approver_weight >= threshold(self)) {
+        // TODO what if the threshold got lowered and hence a tx is now approved without new approvals?
+        emit(TransactionApprovalThresholdReachedEvent {
+            account: self.get_address(),
+            transaction_digest,
+            total_approver_weight,
+            threshold: threshold(self),
+        });
+    }
+
 }
 
 /// Removes a transaction.
@@ -154,6 +320,11 @@ public fun remove_transaction(
 
     // Remove the transaction.
     transactions_mut(self).remove(transaction_digest);
+
+    emit(TransactionRemovedEvent {
+        account: self.get_address(),
+        transaction_digest,
+    });
 }
 
 // -------------------------------- Account Builder --------------------------------
@@ -237,26 +408,40 @@ public fun build_and_publish(builder: AccountBuilder, ctx: &mut TxContext) {
         threshold,
     } = builder;
 
+    // We know the option is some because of the assert above.
+    let authenticator = authenticator_opt.destroy_some();
+
     let mut ticket = isafe::account::create_ticket_with_default_authenticator(AppKey {}, ctx);
 
     let members = members::create(members, weights);
+    let members_vector = *members.as_vector();
 
     let account = isafe::account::borrow_account_from_ticket_mut(&mut ticket);
 
     // First, let's attach the authenticator.
-    attach_auth_info_v1(account, authenticator_opt.destroy_some(), AppKey {});
+    attach_auth_info_v1(account, authenticator, AppKey {});
 
     // Then add all the data as dynamic fields.
     account.add_dynamic_field(members_key(), members, AppKey {});
     account.add_dynamic_field(threshold_key(), threshold, AppKey {});
     account.add_dynamic_field(transactions_key(), transactions::create(ctx), AppKey {});
 
+    let mut event_guardian = vector<u8>[];
     if (option::is_some(&guardian)) {
+        event_guardian = *guardian.borrow();
         account.add_dynamic_field(guardian_key(), guardian.destroy_some(), AppKey {});
     };
 
     // Create the account from the ticket
-    isafe::account::create_account_from_ticket(ticket);
+    let account_address = isafe::account::create_account_from_ticket(ticket);
+
+    emit(AccountCreatedEvent {
+        account: account_address,
+        members: members_vector,
+        threshold,
+        guardian: event_guardian,
+        authenticator,
+    });
 }
 
 // --------------------------------------- View Functions ---------------------------------------

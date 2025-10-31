@@ -17,7 +17,7 @@ const EMemberIsNotFound: vector<u8> = b"The member with the provided address is 
 // ----------------------------------- Data Structures -----------------------------------
 
 /// Holds the information about a member.
-public struct Member has drop, store {
+public struct Member has copy, drop, store {
     /// The member address.
     addr: address,
     /// The voting power of the member.
@@ -45,6 +45,11 @@ public(package) fun create(addresses: vector<address>, weights: vector<u64>): Me
     Members { list }
 }
 
+/// Creates a `Member` instance.
+public(package) fun create_member(addr: address, weight: u64): Member {
+    Member { addr, weight }
+}
+
 // --------------------------------------- Members ---------------------------------------
 
 /// Checks if the account has a member with the provided address.
@@ -61,16 +66,23 @@ public fun borrow(self: &Members, addr: address): &Member {
     self.list.borrow(*index.borrow())
 }
 
-public(package) fun remove_member(self: &mut Members, addr: address) {
+public(package) fun remove_member(self: &mut Members, addr: address): Member {
     let index = find_index(self, addr);
     assert!(index.is_some(), EMemberIsNotFound);
-    self.list.remove(*index.borrow());
+    self.list.remove(*index.borrow())
 }
 
 public(package) fun add_member(self: &mut Members, addr: address, weight: u64) {
     assert!(!self.contains(addr), EMembersMustNotContainDuplicates);
     let member = Member { addr, weight };
     self.list.push_back(member);
+}
+
+public(package) fun set_member_weight(self: &mut Members, addr: address, weight: u64) {
+    let index = find_index(self, addr);
+    assert!(index.is_some(), EMemberIsNotFound);
+    let member = self.list.borrow_mut(*index.borrow());
+    member.weight = weight;
 }
 
 /// Returns the addresses of all the members.
@@ -101,6 +113,11 @@ public(package) fun borrow_mut(self: &mut Members, addr: address): &mut Member {
     assert!(index.is_some(), EMemberIsNotFound);
 
     self.list.borrow_mut(*index.borrow())
+}
+
+// Returns the members as a vector.
+public(package) fun as_vector(self: &Members): &vector<Member> {
+    &self.list
 }
 
 // --------------------------------------- Member ---------------------------------------
