@@ -1,6 +1,6 @@
 use anyhow::Result;
 use iota_sdk::json::IotaJsonValue;
-use iota_sdk::rpc_types::IotaTransactionBlockResponseOptions;
+use iota_sdk::rpc_types::{IotaTransactionBlockResponseOptions, IotaTypeTag};
 use iota_sdk::types::base_types::{IotaAddress, ObjectID};
 use iota_sdk::IotaClientBuilder;
 use iota_types::base_types::SequenceNumber;
@@ -36,7 +36,9 @@ async fn main() -> Result<()> {
             package_object_id,
             MODULE,
             FUNCTION,
-            vec![],
+            vec![IotaTypeTag::new(
+                "0x2::coin::Coin<0x2::iota::IOTA>".to_string(),
+            )],
             call_args,
             gas,
             gas_budget,
@@ -50,7 +52,7 @@ async fn main() -> Result<()> {
     stdin().read_line(&mut String::new()).unwrap();
 
     // submit the transaction
-    client
+    let res = client
         .quorum_driver_api()
         .execute_transaction_block(
             Transaction::from_generic_sig_data(
@@ -82,5 +84,6 @@ async fn main() -> Result<()> {
         )
         .await?;
 
+    print!("Transaction block executed: {:#?}\n", res);
     Ok(())
 }
