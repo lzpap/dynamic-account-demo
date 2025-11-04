@@ -1,12 +1,13 @@
 module isafe::dynamic_auth;
 
-use iota::account::AuthenticatorInfoV1;
+use iota::account::{AuthenticatorInfoV1, create_auth_info_v1};
 use iota::auth_context::AuthContext;
 use iota::dynamic_field;
+use iota::event::emit;
 use isafe::account::{Account, ensure_tx_sender_is_account, attach_auth_info_v1};
 use isafe::members::{Self, Members, Member};
 use isafe::transactions::{Self, Transactions, add_approval};
-use iota::event::emit;
+use std::ascii;
 
 // -------------------------------- Errors --------------------------------
 
@@ -31,7 +32,7 @@ public struct AccountCreatedEvent has copy, drop, store {
     members: vector<Member>,
     threshold: u64,
     guardian: vector<u8>,
-    authenticator: AuthenticatorInfoV1
+    authenticator: AuthenticatorInfoV1,
 }
 
 // An event emitted when a member is added to the account.
@@ -142,9 +143,9 @@ public fun remove_member(self: &mut Account, addr: address, ctx: &mut TxContext)
     assert!(members.total_weight() - weight_to_remove >= account_threshold, EThresholdNotEnough);
     let removed = members.remove_member(addr);
 
-    emit(MemberRemovedEvent{
+    emit(MemberRemovedEvent {
         account: self.get_address(),
-        member: removed
+        member: removed,
     })
 }
 
@@ -164,7 +165,7 @@ public fun update_member_weight(
 
     // the total weight of the account must be >= threshold after the weight update
     let current_weight = members.borrow(addr).weight();
-    let new_total_weight = members.total_weight() - current_weight + new_weight; 
+    let new_total_weight = members.total_weight() - current_weight + new_weight;
     assert!(new_total_weight >= account_threshold, EThresholdNotEnough);
 
     members.set_member_weight(addr, new_weight);
@@ -192,7 +193,7 @@ public fun set_threshold(self: &mut Account, new_threshold: u64, ctx: &mut TxCon
     let old_threshold = *threshold_ref;
     *threshold_ref = new_threshold;
 
-    emit(ThresholdChangedEvent{
+    emit(ThresholdChangedEvent {
         account: self.get_address(),
         old_threshold: old_threshold,
         new_threshold,
@@ -216,7 +217,7 @@ public fun set_guardian(self: &mut Account, new_guardian: vector<u8>, ctx: &mut 
     let old_guardian = *guardian_ref;
     *guardian_ref = new_guardian;
 
-    emit(GuardianChangedEvent{
+    emit(GuardianChangedEvent {
         account: self.get_address(),
         old_guardian,
         new_guardian,
@@ -302,7 +303,6 @@ public fun approve_transaction(
             threshold: threshold(self),
         });
     }
-
 }
 
 /// Removes a transaction.
@@ -376,7 +376,7 @@ public fun set_guardian_in_builder(
 // Sets the threshold for the AccountBuilder.
 public fun set_threshold_in_builder(mut builder: AccountBuilder, threshold: u64): AccountBuilder {
     assert!(threshold > 0, EThresholdTooLow);
-    assert!(total_weight(&builder.weights) > threshold, EThresholdTooHigh);
+    assert!(total_weight(&builder.weights) >= threshold, EThresholdTooHigh);
 
     builder.threshold = threshold;
     builder
@@ -521,4 +521,27 @@ fun total_weight(weights: &vector<u64>): u64 {
     let mut total = 0;
     weights.do_ref!(|w| total = total + *w);
     total
+}
+
+public fun setup_account(
+    addr1: address,
+    addr2: address,
+    pkg: address,
+    mod: ascii::String,
+    function: ascii::String,
+    ctx: &mut TxContext,
+) {
+    let authenticator = create_auth_info_v1(
+        pkg,
+        mod,
+        function,
+    );
+
+    let mut builder = create_account_builder()
+        .add_authenticator_to_builder(authenticator)
+        .add_member_to_builder(addr1, 1)
+        .add_member_to_builder(addr2, 1)
+        .set_threshold_in_builder(2);
+
+    build_and_publish(builder, ctx);
 }
