@@ -1,0 +1,11 @@
+[package]
+name = "scripts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+iota-types = { git = "https://github.com/iotaledger/iota", branch = "vm-lang/aa-auth/8116-feature-branch", package = "iota-types" }
+iota-sdk = { git = "https://github.com/iotaledger/iota", branch = "vm-lang/aa-auth/8116-feature-branch", package = "iota-sdk" }
+tokio = "1.47"
+anyhow = "1.0"
+serde_json = "1.0"
