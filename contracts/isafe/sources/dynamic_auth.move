@@ -4,7 +4,12 @@ use iota::account::{AuthenticatorInfoV1, create_auth_info_v1};
 use iota::auth_context::AuthContext;
 use iota::dynamic_field;
 use iota::event::emit;
-use isafe::account::{Account, ensure_tx_sender_is_account, attach_auth_info_v1};
+use isafe::account::{
+    Account,
+    ensure_tx_sender_is_account,
+    attach_auth_info_v1,
+    rotate_auth_info_v1
+};
 use isafe::members::{Self, Members, Member};
 use isafe::transactions::{Self, Transactions, add_approval};
 use std::ascii;
@@ -26,8 +31,17 @@ const ETransactionDoesNotHaveSufficientApprovals: vector<u8> =
 
 // --------------------------------------- Events ---------------------------------------
 
-/// An event emitted when a new account is created.
+/// An event emitted when a new account is created with dynamic authentication scheme.
 public struct AccountCreatedEvent has copy, drop, store {
+    account: address,
+    members: vector<Member>,
+    threshold: u64,
+    guardian: vector<u8>,
+    authenticator: AuthenticatorInfoV1,
+}
+
+/// An event emitted when an account is rotated to use dynamic auth scheme.
+public struct AccountRotatedEvent has copy, drop, store {
     account: address,
     members: vector<Member>,
     threshold: u64,
@@ -224,7 +238,40 @@ public fun set_guardian(self: &mut Account, new_guardian: vector<u8>, ctx: &mut 
     });
 }
 
-// TODO rotate authenticator
+/// Destroy all data associated with the current account in preparation for migrating to a new account implementation.
+/// !!! WARNING !!!:
+///   - make sure that all transactions in-flight are removed by calling `remove_transaction` before calling this function.
+///   - you MUST set up a new authenticator on the account in the same transaction after calling this function, otherwise
+///     the account will be locked forever.
+///
+/// General flow for migrating to a new account implementation:
+/// 1. Propose a new PTB to the account that does:
+///     - removing all transaction digests from the account by called `isafe::dynamic_auth::remove_transaction()` multiple times
+///     - calling `isafe::dynamic_auth::destroy_account_data()`
+///     - calling `isafe::acount::add_allowed_authenticator()` to add the new authenticator as allowed
+///     - rotate to a new authenticator by calling isafe::account::rotate_authenticator() with the new authenticator info
+///     - add any new dynamic fields required by the new account implementation
+/// (note that the last 3 points will probably be implemented in the new authenticator SC itself)
+/// 2. Approve and execute the PTB.
+public fun destroy_account_data(self: &mut Account, ctx: &mut TxContext) {
+    // Destroying the account requires the transaction to be initiated by the account itself.
+    ensure_tx_sender_is_account(self, ctx);
+
+    // Remove all dynamic_auth package related fields.
+    set_threshold_to_zero_before_rotation(self, ctx); // temporarily set threshold to 0 to allow member removal
+    let members = members(self).addresses();
+    members.do_ref!(|addr| {
+        remove_member(self, *addr, ctx);
+    });
+
+    let _members: Members = self.remove_dynamic_field(members_key(), AppKey {});
+    let _threshold: u64 = self.remove_dynamic_field(threshold_key(), AppKey {});
+    let _transactions: Transactions = self.remove_dynamic_field(transactions_key(), AppKey {});
+    _transactions.destroy();
+    if (dynamic_field::exists_(self.borrow_id(), guardian_key())) {
+        let _guardian: vector<u8> = self.remove_dynamic_field(guardian_key(), AppKey {});
+    };
+}
 
 // --------------------------------------- Authenticator ---------------------------------------
 /// A transaction authenticator.
@@ -392,7 +439,8 @@ public fun add_authenticator_to_builder(
 }
 
 // Builds and publishes the Account from the AccountBuilder.
-public fun build_and_publish(builder: AccountBuilder, ctx: &mut TxContext) {
+// used for creating a new account on-chain.
+public fun build_and_publish(builder: AccountBuilder, ctx: &mut TxContext): address {
     // threshold can't be zero, which means it had to be set.
     // it is possible to set a threshold and then keep adding members, but that's on the caller.
     assert!(builder.threshold > 0, EThresholdTooLow);
@@ -437,6 +485,54 @@ public fun build_and_publish(builder: AccountBuilder, ctx: &mut TxContext) {
 
     emit(AccountCreatedEvent {
         account: account_address,
+        members: members_vector,
+        threshold,
+        guardian: event_guardian,
+        authenticator,
+    });
+
+    account_address
+}
+
+/// Build an account on an already existing Account shared object.
+public fun build(builder: AccountBuilder, account: &mut Account, ctx: &mut TxContext) {
+    // threshold can't be zero, which means it had to be set.
+    // it is possible to set a threshold and then keep adding members, but that's on the caller.
+    assert!(builder.threshold > 0, EThresholdTooLow);
+
+    // an authenticator must be present.
+    assert!(option::is_some(&builder.authenticator), EAuthenticatorNotAttached);
+
+    let AccountBuilder {
+        authenticator: authenticator_opt,
+        members,
+        weights,
+        guardian,
+        threshold,
+    } = builder;
+
+    // We know the option is some because of the assert above.
+    let authenticator = authenticator_opt.destroy_some();
+
+    let members = members::create(members, weights);
+    let members_vector = *members.as_vector();
+
+    // First, let's rotate the previous authenticator to the new one.
+    rotate_auth_info_v1(account, authenticator, AppKey {});
+
+    // Then add all the data as dynamic fields.
+    account.add_dynamic_field(members_key(), members, AppKey {});
+    account.add_dynamic_field(threshold_key(), threshold, AppKey {});
+    account.add_dynamic_field(transactions_key(), transactions::create(ctx), AppKey {});
+
+    let mut event_guardian = vector<u8>[];
+    if (option::is_some(&guardian)) {
+        event_guardian = *guardian.borrow();
+        account.add_dynamic_field(guardian_key(), guardian.destroy_some(), AppKey {});
+    };
+
+    emit(AccountRotatedEvent {
+        account: account.borrow_id().to_address(),
         members: members_vector,
         threshold,
         guardian: event_guardian,
@@ -521,6 +617,15 @@ fun total_weight(weights: &vector<u64>): u64 {
     let mut total = 0;
     weights.do_ref!(|w| total = total + *w);
     total
+}
+
+// internal function to set the threshold to zero during destruction of account data
+fun set_threshold_to_zero_before_rotation(self: &mut Account, ctx: &TxContext) {
+    // Setting a new threshold requires the transaction to be initiated by the account itself.
+    ensure_tx_sender_is_account(self, ctx);
+
+    let threshold_ref: &mut u64 = self.borrow_dynamic_field_mut(threshold_key(), AppKey {});
+    *threshold_ref = 0;
 }
 
 public fun setup_account(

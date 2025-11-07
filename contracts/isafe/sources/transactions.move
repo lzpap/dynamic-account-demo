@@ -42,6 +42,13 @@ public(package) fun create(ctx: &mut TxContext): Transactions {
     Transactions { table: table::new(ctx) }
 }
 
+/// Destroys the `Transactions` instance.
+/// Aborts if the transactions table is not empty.
+public(package) fun destroy(self: Transactions) {
+    let Transactions { table } = self;
+    table.destroy_empty();
+}
+
 // ------------------------------------- Transactions -------------------------------------
 
 /// Checks if the account has a transaction with the provided digest.

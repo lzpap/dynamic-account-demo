@@ -22,7 +22,7 @@ fun test_creation() {
         vector[1, 2, 3],
         3,
         option::some(vector[0, 1, 2]),
-        dummy_authenticator()
+        dummy_authenticator(),
     );
     // Advance the scenario to the next transaction.
     // account object shall be shared.
@@ -36,6 +36,84 @@ fun test_creation() {
     assert!(dynamic_auth::guardian(&account).borrow() == vector[0,1,2]);
 
     test_scenario::return_shared(account);
+    scenario.end();
+}
+
+#[test]
+fun test_rotation() {
+    let mut scenario = test_scenario::begin(@0xA);
+
+    // Create an iSafe account with 3 members and an authenticator.
+    let account_address = setup_account(
+        &mut scenario,
+        vector[@0x1, @0x2, @0x3],
+        vector[1, 2, 3],
+        3,
+        option::some(vector[0, 1, 2]),
+        dummy_authenticator(),
+    );
+    // Advance the scenario to the next transaction where we immediately rotate the aaccount.
+    scenario.next_tx(account_address);
+    let mut account: Account = test_scenario::take_shared<Account>(&scenario);
+
+    // destroy the old "dynamic authenticator" and replace it with a new one.
+    dynamic_auth::destroy_account_data(&mut account, scenario.ctx());
+
+    let new_authenticator = create_auth_info_v1_for_testing(
+        @0xDEAD,
+        b"new_dummy".to_ascii_string(),
+        b"new_dummy_function".to_ascii_string(),
+    );
+    let builder = dynamic_auth::create_account_builder()
+        .add_authenticator_to_builder(new_authenticator)
+        .add_member_to_builder(@0x4, 4)
+        .set_threshold_in_builder(4);
+
+    builder.build(&mut account, scenario.ctx());
+    test_scenario::return_shared(account);
+
+    scenario.next_tx(@0x1);
+
+    let account: Account = test_scenario::take_shared<Account>(&scenario);
+    // Verify that the account has the correct members and authenticator.
+    assert!(dynamic_auth::members(&account).addresses() == vector[@0x4]);
+    assert!(dynamic_auth::threshold(&account) == 4);
+    assert!(has_auth_info_v1(account.borrow_id()));
+    test_scenario::return_shared(account);
+
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = ::iota::table::ETableNotEmpty)]
+fun test_rotation_fail_non_empty_transactions() {
+    let mut scenario = test_scenario::begin(@0xA);
+
+    // Create an iSafe account with 3 members and an authenticator.
+    let account_address = setup_account(
+        &mut scenario,
+        vector[@0x1, @0x2, @0x3],
+        vector[1, 2, 3],
+        3,
+        option::some(vector[0, 1, 2]),
+        dummy_authenticator(),
+    );
+    scenario.next_tx(@0x1);
+    let mut account: Account = test_scenario::take_shared<Account>(&scenario);
+    let proposed_tx_context = tx_context::new_from_hint(account_address, 42, 0, 0, 0);
+    let proposed_tx_digest = proposed_tx_context.digest();
+
+    dynamic_auth::propose_transaction(&mut account, *proposed_tx_digest, scenario.ctx());
+    test_scenario::return_shared(account);
+
+    // Advance the scenario to the next transaction where we immediately rotate the account.
+    scenario.next_tx(account_address);
+    let mut account: Account = test_scenario::take_shared<Account>(&scenario);
+
+    // destroy the old "dynamic authenticator" and replace it with a new one.
+    // since there is a pending transaction, this shall fail.
+    dynamic_auth::destroy_account_data(&mut account, scenario.ctx());
+    test_scenario::return_shared(account);
+
     scenario.end();
 }
 
@@ -55,7 +133,7 @@ fun test_approval_flow_not_enough_approvals() {
         vector[1, 2, 3],
         3,
         option::some(vector[0, 1, 2]),
-        dummy_authenticator()
+        dummy_authenticator(),
     );
 
     // 0x1 submits a tx proposal
@@ -97,7 +175,7 @@ fun test_approval_flow() {
         vector[1, 2, 3],
         3,
         option::some(vector[0, 1, 2]),
-        dummy_authenticator()
+        dummy_authenticator(),
     );
 
     // 0x1 submits a tx proposal
@@ -150,10 +228,11 @@ fun setup_account(
     threshold: u64,
     guardian: Option<vector<u8>>,
     authenticator: AuthenticatorInfoV1,
-) {
+): address {
     // Create an iSafe account with 3 members and an authenticator.
-    let mut builder = dynamic_auth::create_account_builder()
-        .add_authenticator_to_builder(authenticator);
+    let mut builder = dynamic_auth::create_account_builder().add_authenticator_to_builder(
+        authenticator,
+    );
     
     assert!(vector::length(&members) == vector::length(&weights), EInvalidMembersAndWeightsLength);
     vector::zip_do!(members, weights, |addr, weight| {
@@ -166,7 +245,7 @@ fun setup_account(
         builder = builder.set_guardian_in_builder(guardian.destroy_some());
     };
 
-    builder.build_and_publish(scenario.ctx());
+    builder.build_and_publish(scenario.ctx())
 }
 
 fun dummy_authenticator(): AuthenticatorInfoV1 {
