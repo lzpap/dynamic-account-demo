@@ -9,6 +9,7 @@ export const envSchema = z.record(
         network: z.enum(['localnet', 'devnet', 'testnet', 'mainnet']),
         indexerUrl: z.string(),
         baseUrl: z.string(),
+        packageId: z.string(),
     }),
 );
 

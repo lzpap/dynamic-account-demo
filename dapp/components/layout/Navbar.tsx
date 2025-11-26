@@ -2,6 +2,7 @@
 
 import { ConnectButton } from '@iota/dapp-kit';
 import Link from 'next/link';
+import { AccountSelector } from '@/components/AccountSelector';
 
 export function Navbar() {
     return (
@@ -9,7 +10,11 @@ export function Navbar() {
             <div className="w-full mb-6">
                 <ConnectButton connectText="Connect Wallet" className="w-full" />
             </div>
+            <div className="w-full mb-6">
+                <AccountSelector />
+            </div>
             <Link href="/" className="mb-4 text-lg font-semibold">Home</Link>
+            <Link href="/create" className="mb-4 text-lg font-semibold">Create</Link>
         </nav>
     );
 }

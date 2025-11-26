@@ -14,6 +14,7 @@ import { APP_STATIC_THEME } from "@/lib/constants/theme.constants";
 import { createIotaClient } from "@/lib/utils/defaultRpcClient";
 
 import { ThemeProvider } from "./ThemeProvider";
+import { ISafeAccountProvider } from "./ISafeAccountProvider";
 
 export function AppProviders({ children }: React.PropsWithChildren) {
   const [queryClient] = useState(() => new QueryClient());
@@ -43,8 +44,11 @@ export function AppProviders({ children }: React.PropsWithChildren) {
           ]}
         >
           <ThemeProvider staticTheme={APP_STATIC_THEME}>
+            <ISafeAccountProvider>
             {children}
+            </ISafeAccountProvider>
             <Toaster />
+            
           </ThemeProvider>
         </WalletProvider>
       </IotaClientProvider>
