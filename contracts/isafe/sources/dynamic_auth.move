@@ -37,7 +37,7 @@ public struct AccountCreatedEvent has copy, drop, store {
     members: vector<Member>,
     threshold: u64,
     guardian: vector<u8>,
-    authenticator: AuthenticatorInfoV1,
+    authenticator: AuthenticatorInfoV1<Account>,
 }
 
 /// An event emitted when an account is rotated to use dynamic auth scheme.
@@ -46,7 +46,7 @@ public struct AccountRotatedEvent has copy, drop, store {
     members: vector<Member>,
     threshold: u64,
     guardian: vector<u8>,
-    authenticator: AuthenticatorInfoV1,
+    authenticator: AuthenticatorInfoV1<Account>,
 }
 
 // An event emitted when a member is added to the account.
@@ -378,7 +378,7 @@ public fun remove_transaction(
 
 // Hot potato pattern for building a new account.
 public struct AccountBuilder {
-    authenticator: Option<AuthenticatorInfoV1>,
+    authenticator: Option<AuthenticatorInfoV1<Account>>,
     // The members' addresses.
     members: vector<address>,
     // The members' weights.
@@ -432,7 +432,7 @@ public fun set_threshold_in_builder(mut builder: AccountBuilder, threshold: u64)
 // Adds an authenticator to the AccountBuilder.
 public fun add_authenticator_to_builder(
     mut builder: AccountBuilder,
-    authenticator: AuthenticatorInfoV1,
+    authenticator: AuthenticatorInfoV1<Account>,
 ): AccountBuilder {
     builder.authenticator = option::some(authenticator);
     builder

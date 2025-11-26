@@ -113,11 +113,12 @@ public fun remove_allowed_authenticator<T: drop>(
 // - an authenticator is already attached to the account.
 public fun attach_auth_info_v1<T: drop>(
     self: &mut Account,
-    authenticator: AuthenticatorInfoV1,
+    authenticator: AuthenticatorInfoV1<Account>,
     app_key: T,
 ) {
     assert!(app_key_allowed(self, app_key), EAppKeyNotAuthorized);
-    iota::account::attach_auth_info_v1(&mut self.id, authenticator);
+    let proof = iota::account::check_auth_info_v1_compatibility(self, authenticator);
+    iota::account::attach_auth_info_v1(&mut self.id, proof);
 }
 
 /// Rotate the account-related authenticator.
@@ -126,11 +127,12 @@ public fun attach_auth_info_v1<T: drop>(
 /// - no authenticator is attached to the account.
 public fun rotate_auth_info_v1<T: drop>(
     self: &mut Account,
-    authenticator: AuthenticatorInfoV1,
+    authenticator: AuthenticatorInfoV1<Account>,
     app_key: T,
-): AuthenticatorInfoV1 {
+): AuthenticatorInfoV1<Account> {
     assert!(app_key_allowed(self, app_key), EAppKeyNotAuthorized);
-    iota::account::rotate_auth_info_v1(&mut self.id, authenticator)
+    let proof = iota::account::check_auth_info_v1_compatibility(self, authenticator);
+    iota::account::rotate_auth_info_v1(&mut self.id, proof)
 }
 
 // -------------------------------- Dynamic Field Interface --------------------------------
@@ -190,7 +192,7 @@ public fun get_address(self: &Account): address {
 }
 
 // Returns the authenticator info attached to the account
-public fun get_authenticator(self: &Account): &AuthenticatorInfoV1 {
+public fun get_authenticator(self: &Account): &AuthenticatorInfoV1<Account> {
     iota::account::borrow_auth_info_v1(&self.id)
 }
 

@@ -59,15 +59,7 @@ async fn main() -> Result<()> {
                 data,
                 vec![GenericSignature::MoveAuthenticator(
                     MoveAuthenticator::new_for_testing(
-                        vec![CallArg::Object(
-                            iota_types::transaction::ObjectArg::SharedObject {
-                                id: ObjectID::from_str(&std::env::var("ACCOUNT_ADDRESS")?)?,
-                                initial_shared_version: SequenceNumber::from_u64(
-                                    std::env::var("INIT")?.parse()?,
-                                ),
-                                mutable: false,
-                            },
-                        )],
+                        vec![],
                         vec![],
                         CallArg::Object(iota_types::transaction::ObjectArg::SharedObject {
                             id: ObjectID::from_str(&std::env::var("ACCOUNT_ADDRESS")?)?,
