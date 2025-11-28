@@ -18,20 +18,10 @@ export const createIotaClient = (network: NetworkId): IotaClient => {
     const networkGraphqlUrl = supportedNetwork?.graphql ?? network;
     const networkJsonRpcUrl = supportedNetwork?.url;
 
-    const client = new IotaClient({
-        transport: new IotaClientGraphQLTransport({
-            url: networkGraphqlUrl,
-            fallbackTransportUrl: networkJsonRpcUrl,
-            unsupportedMethods: [
-                'multiGetObjects',
-                'getReferenceGasPrice',
-                'getNormalizedMoveFunction',
-                'getOwnedObjects',
-                'dryRunTransactionBlock',
-                'executeTransactionBlock',
-            ],
-        }),
-    });
+    console.log("GraphQL URL:", networkGraphqlUrl);
+    console.log("JSON-RPC URL:", networkJsonRpcUrl);
+
+    const client = new IotaClient({ url: networkJsonRpcUrl });
     defaultClientMap.set(network, client);
     return client;
 };
