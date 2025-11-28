@@ -1,5 +1,7 @@
 'use client';
 
+import { useGetThreshold } from '@/hooks/useGetThreshold';
+
 interface ThresholdProps {
   accountAddress: string;
   compact?: boolean;
@@ -8,9 +10,17 @@ interface ThresholdProps {
 export function Threshold({ accountAddress, compact = false }: ThresholdProps) {
     // TODO: Fetch threshold data here, for now hardcoding
     // hint: can call the view function threshold() from the iSafe smart contract with the address
-    // can call total_weight() similarly
-    const threshold = 2;
-    const totalWeight = 4;
+    // can call total_weight() similarl
+
+      const { threshold, totalWeight, error, isLoading } = useGetThreshold(accountAddress);
+    
+      if (isLoading) {
+        return <div>Loading threshold...</div>;
+      }
+    
+      if (error || (!threshold && !isLoading)) {
+        return <div>Error loading threshold: {error?.message}</div>;
+      }
 
     if (compact) {
         return (

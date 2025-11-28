@@ -1,5 +1,7 @@
 "use client";
 
+import { useGetMembers } from "@/hooks/useGetMembers";
+
 interface Member {
   address: string;
   weight: number;
@@ -12,21 +14,24 @@ interface MembersProps {
 
 export function Members({ accountAddress, compact = false }: MembersProps) {
 
-  // TODO: Fetch members data based on accountAddress. Can call the view function members() from the iSafe smart contract with the address
-  const members : Member[] = [
-    { address: "0x1234567890abcdef1234567890abcdef12345678", weight: 1 },
-    { address: "0xabcdef1234567890abcdef1234567890abcdef12", weight: 2 },
-    { address: "0x7890abcdef1234567890abcdef1234567890abcd", weight: 1 },
-  ];
+  const { data, error, isLoading } = useGetMembers(accountAddress);
 
-  const totalWeight = members.reduce((sum, m) => sum + m.weight, 0);
+  if (isLoading) {
+    return <div>Loading members...</div>;
+  }
+
+  if (error || !data) {
+    return <div>Error loading members: {error?.message}</div>;
+  }
+
+  const totalWeight = data?.reduce((sum, m) => sum + m.weight, 0);
 
   if (compact) {
     return (
       <div className="relative group">
         <div className="space-y-3 cursor-help">
           <div className="flex items-center justify-between">
-            <span className="text-3xl font-bold">{members.length}</span>
+            <span className="text-3xl font-bold">{data?.length}</span>
             <span className="text-xs text-foreground/60 uppercase">Total Members</span>
           </div>
           <div className="text-sm text-foreground/70">
@@ -44,7 +49,7 @@ export function Members({ accountAddress, compact = false }: MembersProps) {
               Member Details
             </h4>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {members.map((member, index) => (
+              {data?.map((member, index) => (
                 <div
                   key={member.address}
                   className="flex items-center justify-between bg-foreground/5 px-3 py-2 rounded-md text-xs"
@@ -75,9 +80,9 @@ export function Members({ accountAddress, compact = false }: MembersProps) {
 
       {/* Members List */}
       <div className="mb-6">
-        {members.length > 0 ? (
+        {data.length > 0 ? (
           <div className="space-y-2">
-            {members.map((member, index) => (
+            {data?.map((member, index) => (
               <div
                 key={member.address}
                 className="flex items-center justify-between bg-background px-4 py-3 rounded-md border border-foreground/20"

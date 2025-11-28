@@ -10,6 +10,7 @@ export const envSchema = z.record(
         indexerUrl: z.string(),
         baseUrl: z.string(),
         packageId: z.string(),
+        packageMetadataId: z.string(),
     }),
 );
 

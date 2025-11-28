@@ -1,23 +1,20 @@
 "use client";
 
-import { useISafeAccount } from "@/providers/ISafeAccountProvider";
 import { Transactions } from "./Transactions";
 import { Members } from "./Members";
 import { Threshold } from "./Threshold";
 import { AccountHistory } from "./AccountHistory";
 
-export function AccountOverView() {
-  const { isafeAccount } = useISafeAccount();
-
-  if (!isafeAccount) {
-    return (
-      <div className="max-w-4xl mx-auto mt-8 p-6 bg-foreground/5 rounded-lg">
-        <p className="text-center text-foreground/60">
-          No account selected. Please select an account from the navbar.
-        </p>
-      </div>
-    );
-  }
+export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
+  // if (!isafeAccount) {
+  //   return (
+  //     <div className="max-w-4xl mx-auto mt-8 p-6 bg-foreground/5 rounded-lg">
+  //       <p className="text-center text-foreground/60">
+  //         No account selected. Please select an account from the navbar.
+  //       </p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="max-w-7xl mx-auto mt-8 space-y-6">
