@@ -4,6 +4,7 @@ use iota::account::{AuthenticatorInfoV1, create_auth_info_v1};
 use iota::auth_context::AuthContext;
 use iota::dynamic_field;
 use iota::event::emit;
+use iota::package_metadata::PackageMetadataV1;
 use isafe::account::{
     Account,
     ensure_tx_sender_is_account,
@@ -280,6 +281,7 @@ public fun destroy_account_data(self: &mut Account, ctx: &mut TxContext) {
 /// The total weight of the members who approved the transaction must be greater than or equal to the threshold.
 /// If the members list is changed after the transaction proposal, only the members who are still in the list
 /// are considered for the approval. Their weights are taken from the current members list.
+#[authenticator]
 public fun authenticate(self: &Account, _: &AuthContext, ctx: &TxContext) {
     // Check that the sender of this transaction is the account.
     ensure_tx_sender_is_account(self, ctx);
@@ -631,13 +633,13 @@ fun set_threshold_to_zero_before_rotation(self: &mut Account, ctx: &TxContext) {
 public fun setup_account(
     addr1: address,
     addr2: address,
-    pkg: address,
+    package_metadata: &PackageMetadataV1,
     mod: ascii::String,
     function: ascii::String,
     ctx: &mut TxContext,
 ) {
     let authenticator = create_auth_info_v1(
-        pkg,
+        package_metadata,
         mod,
         function,
     );
@@ -647,6 +649,33 @@ public fun setup_account(
         .add_member_to_builder(addr1, 1)
         .add_member_to_builder(addr2, 1)
         .set_threshold_in_builder(2);
+
+    build_and_publish(builder, ctx);
+}
+
+// Creates an iSafe account with the given members, weights, threshold
+public entry fun create_account(
+    members: vector<address>,
+    weights: vector<u64>,
+    threshold: u64,
+    package_metadata: &PackageMetadataV1,
+    ctx: &mut TxContext,
+) {
+    let authenticator = create_auth_info_v1(
+        package_metadata,
+        ascii::string(b"dynamic_auth"),
+        ascii::string(b"authenticate"),
+    );
+
+    let mut builder = create_account_builder().add_authenticator_to_builder(authenticator);
+
+    let mut i = 0;
+    while (i < members.length()) {
+        builder = builder.add_member_to_builder(*members.borrow(i), *weights.borrow(i));
+        i = i + 1;
+    };
+
+    builder = builder.set_threshold_in_builder(threshold);
 
     build_and_publish(builder, ctx);
 }
