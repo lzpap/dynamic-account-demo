@@ -549,6 +549,10 @@ public fun threshold(self: &Account): u64 {
     *dynamic_field::borrow(self.borrow_id(), threshold_key())
 }
 
+public fun total_member_weight(self: &Account): u64 {
+    members(self).total_weight()
+}
+
 /// Immutably borrows the account members.
 public fun members(self: &Account): &Members {
     dynamic_field::borrow(self.borrow_id(), members_key())
