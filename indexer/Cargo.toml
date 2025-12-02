@@ -1,0 +1,19 @@
+[package]
+name = "isafe-indexer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+axum = { version = "0.8", default-features = false, features = ["tokio", "http1", "http2", "json", "matched-path", "original-uri", "form", "query", "ws", "macros"] }
+clap = { version = "4.4", features = ["derive", "wrap_help", "env"] }
+diesel = { version = "2.2.0", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
+dotenvy = "0.15"
+serde = { version = "1.0", features = ["derive", "rc"] }
+tokio = { version = "1.48", features = ["rt-multi-thread", "signal"] }
+tokio-util = "0.7"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "ansi", "smallvec", "tracing-log", "local-time", "env-filter"] }
+
+bin-version = { git = "https://github.com/iotaledger/iota", package = "bin-version" }
+iota-types = { git = "https://github.com/iotaledger/iota", package = "iota-types", branch = "vm-lang/aa-auth/8116-feature-branch"}
