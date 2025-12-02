@@ -3,7 +3,7 @@
 
 use std::str::FromStr;
 
-use iota_types::base_types::{IotaAddress, ObjectID};
+use iota_types::base_types::IotaAddress;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -20,18 +20,12 @@ impl Default for IsafeIndexerConfig {
 }
 
 impl IsafeIndexerConfig {
-    pub fn new(
-        package_address: IotaAddress,
-    ) -> Self {
-        Self {
-            package_address,
-        }
+    pub fn new(package_address: IotaAddress) -> Self {
+        Self { package_address }
     }
 
     pub fn from_env() -> anyhow::Result<Self> {
-        Ok(Self::new(
-            std::env::var("ISAFE_PACKAGE_ADDRESS")?.parse()?,
-        ))
+        Ok(Self::new(std::env::var("ISAFE_PACKAGE_ADDRESS")?.parse()?))
     }
 
     // Create a config based on the package published on devnet.
@@ -43,9 +37,7 @@ impl IsafeIndexerConfig {
 
         let package_address = IotaAddress::from_str(ISAFE_PACKAGE_ADDRESS).unwrap();
 
-        Self::new(
-            package_address,
-        )
+        Self::new(package_address)
     }
 
     /// Checks whether the given package address is an iSage one.
