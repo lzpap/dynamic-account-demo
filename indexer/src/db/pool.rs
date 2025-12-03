@@ -15,7 +15,7 @@ use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 // The migrations directory that contains the SQL migration files.
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 // The path for the sqlite database.
-pub const ACCOUNTS_DB_PATH: &str = "data/ACCOUNTS_DB";
+pub const ACCOUNTS_DB_PATH: &str = "data/isafe.db";
 
 pub type PoolConnection = PooledConnection<ConnectionManager<SqliteConnection>>;
 

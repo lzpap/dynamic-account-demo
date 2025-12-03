@@ -7,10 +7,15 @@ use iota_data_ingestion_core::{
 };
 use iota_json_rpc_types::{IotaObjectDataOptions, IotaTransactionBlockResponseOptions};
 use iota_sdk::IotaClientBuilder;
-use iota_types::{base_types::ObjectID, full_checkpoint_content::CheckpointData};
+use iota_types::{
+    base_types::ObjectID, effects::TransactionEffects, effects::TransactionEffectsAPI,
+    execution_status::ExecutionStatus, full_checkpoint_content::CheckpointData,
+};
 
-use crate::config::IsafeIndexerConfig;
-use crate::db::pool::DbConnectionPool;
+use diesel::Connection;
+
+use crate::db::{pool::DbConnectionPool, queries};
+use crate::{config::IsafeIndexerConfig, events::IsafeEvent};
 use anyhow::{Result, anyhow, bail};
 use async_trait::async_trait;
 use prometheus::Registry;
@@ -99,7 +104,54 @@ impl IsafeWorker {
             checkpoint.checkpoint_summary.sequence_number
         );
         // TODO: implement the actual processing logic here
+        for transaction in &checkpoint.transactions {
+            let TransactionEffects::V1(effects) = &transaction.effects;
 
+            if *effects.status() != ExecutionStatus::Success {
+                continue;
+            }
+
+            let timestamp = checkpoint.checkpoint_summary.timestamp_ms;
+
+            if let Some(events) = &transaction.events {
+                for event in events.data.iter() {
+                    match IsafeEvent::try_from_event(event, &self.config) {
+                        Ok(Some(event)) => self.process_event(event, timestamp)?,
+                        Err(e) => warn!("parsing event failed: {e}"),
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn process_event(&self, event: IsafeEvent, timestamp: u64) -> anyhow::Result<()> {
+        match event {
+            IsafeEvent::AccountCreated(acct_event) => {
+                warn!(
+                    "Processing AccountCreated event for account: {}",
+                    acct_event.account_id
+                );
+                let mut conn = self.pool.get_connection()?;
+                for member in acct_event.members {
+                    conn.transaction::<_, anyhow::Error, _>(|conn| {
+                        queries::insert_member_entry(
+                            conn,
+                            acct_event.account_id,
+                            member.member_address,
+                            member.weight,
+                            timestamp,
+                        )
+                    })?;
+                    info!(
+                        "Added member {} with weight {} to account {}",
+                        member.member_address, member.weight, acct_event.account_id
+                    );
+                }
+            }
+        }
         Ok(())
     }
 }

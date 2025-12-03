@@ -2,6 +2,7 @@ mod config;
 mod db;
 mod metrics;
 mod worker;
+mod events;
 
 use anyhow::Result;
 use clap::Parser;
