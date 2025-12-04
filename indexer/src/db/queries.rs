@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use anyhow::Result;
 use diesel::{
     AggregateExpressionMethods, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl,
@@ -23,4 +25,21 @@ pub fn insert_member_entry(
         ))
         .execute(conn)?;
     Ok(())
+}
+
+pub fn get_accounts_for_member(
+    conn: &mut SqliteConnection,
+    member: &IotaAddress,
+) -> Result<Vec<IotaAddress>> {
+    let results = members::table
+        .filter(members::member_address.eq(member.to_string()))
+        .select(members::account_address)
+        .load::<String>(conn)?;
+
+    let accounts = results
+        .into_iter()
+        .filter_map(|addr_str| IotaAddress::from_str(&addr_str).ok())
+        .collect();
+
+    Ok(accounts)
 }

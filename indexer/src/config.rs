@@ -15,7 +15,7 @@ pub struct IsafeIndexerConfig {
 
 impl Default for IsafeIndexerConfig {
     fn default() -> Self {
-        Self::devnet()
+        Self::from_env().expect("Failed to load iSafe indexer config from environment variables")
     }
 }
 
@@ -33,7 +33,7 @@ impl IsafeIndexerConfig {
     pub fn devnet() -> Self {
         // TODO change on devnet deployment
         const ISAFE_PACKAGE_ADDRESS: &str =
-            "0x79c8714ea294a92da04875c77ccabf8d1a06107e80d41c23d6777d5b1e6724a5";
+            "0x233478c5db4cc8724a94fdbc24ec6d613177280c02623b768e8b749f7b1d8e03";
 
         let package_address = IotaAddress::from_str(ISAFE_PACKAGE_ADDRESS).unwrap();
 

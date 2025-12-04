@@ -1,3 +1,4 @@
+mod api;
 mod config;
 mod db;
 mod metrics;
@@ -14,6 +15,7 @@ use tracing_subscriber::{
 };
 
 use crate::{
+    api::start_api_server,
     config::IsafeIndexerConfig,
     db::pool::{DbConnectionPool, DbConnectionPoolConfig},
     metrics::PrometheusServer,
@@ -72,7 +74,10 @@ impl Command {
                 let connection_pool = DbConnectionPool::new(connection_pool_config)?;
                 connection_pool.run_migrations()?;
 
-                // TODO: spawn API server
+                // Spawn the auction API server
+                let handle = cancel_token.clone();
+                let database_pool = connection_pool.clone();
+                tasks.spawn(async move { start_api_server(database_pool, api_port, handle).await });
 
                 // spawn the main isafe reader worker
                 let isafe_config = IsafeIndexerConfig::from_env().unwrap_or_default();

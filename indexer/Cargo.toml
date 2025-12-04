@@ -15,10 +15,12 @@ dotenvy = "0.15"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "69d496c71fb37e3d22fe85e5bbfd4256d61422b9" }
 futures = "0.3"
 prometheus = "0.14"
+reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 tokio = { version = "1.48", features = ["rt-multi-thread", "signal"] }
 tokio-util = "0.7"
+tower-http = { version = "0.6.6", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "ansi", "smallvec", "tracing-log", "local-time", "env-filter"] }
 
