@@ -1,8 +1,10 @@
 'use client';
 
+import { queryKey, useGetAccountsForAddress } from "@/hooks";
 import { useISafeAccount } from "@/providers/ISafeAccountProvider";
 import { Button } from "@iota/apps-ui-kit";
 import { useAccounts, useCurrentAccount, useCurrentWallet } from "@iota/dapp-kit";
+import { useQueryClient } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 
@@ -16,12 +18,23 @@ export function AccountSelector(){
     const {isafeAccount, toggleAccount } = useISafeAccount();
     const { currentWallet, connectionStatus } = useCurrentWallet();
     const selectedWalletAccount = useCurrentAccount();
+    const { data: accounts } = useGetAccountsForAddress(selectedWalletAccount?.address || "");
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const queryClient = useQueryClient();
 
     const handleAccountCreationClick = () => {
         redirect('/create');
     };
+
+    // Clear iSafe account selection when wallet account changes
+    useEffect(() => {
+        if (isafeAccount) {
+            toggleAccount('');
+            redirect('/');
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedWalletAccount?.address]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -51,8 +64,6 @@ export function AccountSelector(){
     // wallet is connected here
     // if there doesn't exist iSafe accounts for the wallet, prompt the user to create one
 
-    const accounts = addressToAccountMap[selectedWalletAccount.address];
-
     if (!accounts) {
         return (
             <button
@@ -70,7 +81,10 @@ export function AccountSelector(){
     return (
         <div ref={dropdownRef} className="relative w-full">
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: queryKey.member_accounts(selectedWalletAccount.address) });
+                    setIsOpen(!isOpen)
+                }}
                 className={`w-full px-4 py-2 rounded-full text-sm font-medium transition flex items-center justify-between ${
                     isafeAccount 
                         ? 'bg-foreground text-background hover:bg-foreground/90' 

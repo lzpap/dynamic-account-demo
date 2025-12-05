@@ -10,4 +10,5 @@ export const queryKey = {
     members: (id: string) => [...queryKey.all, 'members', id],
     threshold: (id: string) => [...queryKey.all, 'threshold', id],
     totalWeight: (id: string) => [...queryKey.all, 'total-weight', id],
+    member_accounts: (address: string) => [...queryKey.all, 'member-accounts', address],
 };

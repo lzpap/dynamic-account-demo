@@ -55,7 +55,6 @@ export default function AccountHome( ) {
               </div>
             ) : (
               <>
-                <h1 className="text-4xl font-bold text-center mt-10">Welcome to iSafe</h1>
                 <AccountOverView isafeAccount={accountId} />
               </>
             )}
