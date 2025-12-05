@@ -1,0 +1,30 @@
+[package]
+name = "tx-service"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+async-trait = "0.1"
+axum = { version = "0.8", default-features = false, features = ["tokio", "http1", "http2", "json", "matched-path", "original-uri", "form", "query", "ws", "macros"] }
+bcs = "0.1"
+chrono = "0.4.41"
+clap = { version = "4.4", features = ["derive", "wrap_help", "env"] }
+diesel = { version = "2.2.0", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
+diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
+dotenvy = "0.15"
+fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "69d496c71fb37e3d22fe85e5bbfd4256d61422b9" }
+futures = "0.3"
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+tokio = { version = "1.48", features = ["rt-multi-thread", "signal"] }
+tokio-util = "0.7"
+tower-http = { version = "0.6.6", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "ansi", "smallvec", "tracing-log", "local-time", "env-filter"] }
+
+bin-version = { git = "https://github.com/iotaledger/iota", package = "bin-version" }
+iota-json-rpc-types = { git = "https://github.com/iotaledger/iota", package = "iota-json-rpc-types" , branch = "vm-lang/aa-auth/8116-feature-branch" }
+iota-types = { git = "https://github.com/iotaledger/iota", package = "iota-types", branch = "vm-lang/aa-auth/8116-feature-branch"}
+iota-sdk = { git = "https://github.com/iotaledger/iota", package = "iota-sdk", branch = "vm-lang/aa-auth/8116-feature-branch"}
