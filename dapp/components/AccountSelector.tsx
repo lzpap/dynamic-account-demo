@@ -5,7 +5,7 @@ import { useISafeAccount } from "@/providers/ISafeAccountProvider";
 import { Button } from "@iota/apps-ui-kit";
 import { useAccounts, useCurrentAccount, useCurrentWallet } from "@iota/dapp-kit";
 import { useQueryClient } from "@tanstack/react-query";
-import { redirect } from "next/navigation";
+import { redirect, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 
 // TODO: query backend indexer for address -> account mapping
@@ -22,6 +22,8 @@ export function AccountSelector(){
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
+
+    const pathname = usePathname();
 
     const handleAccountCreationClick = () => {
         redirect('/create');
@@ -132,9 +134,12 @@ export function AccountSelector(){
                         <button
                             key={index}
                             onClick={() => {
+                                const prevAccount = isafeAccount;
                                 toggleAccount(account);
                                 setIsOpen(false);
-                                redirect(`/${account}`);
+                                if (prevAccount && pathname.includes(prevAccount)) {
+                                    redirect(pathname.replace(prevAccount, account));
+                                }
                             }}
                             className={`w-full px-4 py-2 text-left text-sm hover:bg-foreground/5 transition ${
                                 !isafeAccount && index === 0 ? 'first:rounded-t-lg' : ''
