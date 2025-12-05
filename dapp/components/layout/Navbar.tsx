@@ -54,6 +54,17 @@ export function Navbar() {
                         Settings
                     </Link>
                     <Link 
+                        href={`/${isafeAccount}/transactions`} 
+                        className={clsx(
+                            'text-lg font-semibold transition px-3 py-2 rounded-md',
+                            pathname === `/${isafeAccount}/transactions` 
+                                ? 'bg-foreground text-background' 
+                                : 'hover:bg-foreground/10'
+                        )}
+                    >
+                        Transactions
+                    </Link>
+                    <Link 
                         href="/create" 
                         className={clsx(
                             'text-lg font-semibold transition px-3 py-2 rounded-md',

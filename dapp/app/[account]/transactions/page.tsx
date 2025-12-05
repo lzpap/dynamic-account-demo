@@ -1,0 +1,91 @@
+"use client";
+
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import ProposedTransactions from "@/components/ProposedTransactions";
+import ApprovedTransactions from "@/components/ApprovedTransactions";
+import ExecutedTransactions from "@/components/ExecutedTransactions";
+import { generateAvatar } from "@/lib/utils/generateAvatar";
+
+type TabType = "proposed" | "approved" | "executed";
+
+export default function TransactionsPage() {
+  const params = useParams();
+  const accountAddress = params.account as string;
+  const [activeTab, setActiveTab] = useState<TabType>("proposed");
+
+  const avatarUrl = generateAvatar(accountAddress, 64);
+
+  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+    {
+      id: "proposed",
+      label: "Proposed",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
+      id: "approved",
+      label: "Approved",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
+      id: "executed",
+      label: "Executed",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto mt-8 space-y-6 pb-12">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-foreground/5 to-foreground/10 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={avatarUrl} alt="Account Avatar" className="w-12 h-12 rounded-full shadow-md" />
+          <div>
+            <h1 className="text-2xl font-bold">Transactions</h1>
+            <p className="text-sm text-foreground/60 font-mono">{accountAddress}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="bg-foreground/5 rounded-xl p-1 border border-foreground/10">
+        <div className="flex gap-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                activeTab === tab.id
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-foreground/60 hover:text-foreground hover:bg-foreground/5"
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div>
+        {activeTab === "proposed" && <ProposedTransactions />}
+        {activeTab === "approved" && <ApprovedTransactions />}
+        {activeTab === "executed" && <ExecutedTransactions />}
+      </div>
+    </div>
+  );
+}
