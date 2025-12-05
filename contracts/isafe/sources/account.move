@@ -103,6 +103,7 @@ public fun remove_allowed_authenticator<T: drop>(
     ensure_tx_sender_is_account(self, ctx);
 
     let app_key_type = get<T>().into_string();
+    // TODO: check if authenticator of this type is attached to the account? If yes, prevent removal.
     assert!(self.allowed_authenticators.length() == 1, EAllowedAuthenticatorsEmpty); // prevent removing the last authenticator
     self.allowed_authenticators.remove(app_key_type);
 }

@@ -10,10 +10,14 @@ import { Transaction } from "@iota/iota-sdk/transactions";
 import { CONFIG } from "@/config/config";
 import { useGetMembers } from "@/hooks/useGetMembers";
 import { useGetThreshold } from "@/hooks/useGetThreshold";
+import { useGetAllowedAuthenticators } from "@/hooks/useGetAllowedAuthenticators";
 import { isValidIotaAddress } from "@iota/iota-sdk/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKey } from "@/hooks/queryKey";
 import { generateAvatar } from "@/lib/utils/generateAvatar";
+import { findThresholdCombinations } from "@/lib/utils/findThresholdCombinations";
+import { shortenAddress } from "@/lib/utils/shortenAddress";
+import { AllowedAuthenticators } from "@/components/AllowedAuthenticators";
 
 type SettingsAction = 
   | { type: "add_member"; address: string; weight: number }
@@ -22,44 +26,6 @@ type SettingsAction =
   | { type: "set_threshold"; newThreshold: number };
 
 type Member = { address: string; weight: number };
-
-// Helper to shorten address
-function shortenAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
-// Find all minimal combinations of members that meet the threshold
-function findThresholdCombinations(members: Member[], threshold: number): Member[][] {
-  if (!members || members.length === 0 || threshold <= 0) return [];
-  
-  const results: Member[][] = [];
-  
-  // Generate all subsets and filter those that meet threshold
-  const findCombos = (index: number, current: Member[], currentWeight: number) => {
-    if (currentWeight >= threshold) {
-      // Check if this is a minimal combination (removing any member would drop below threshold)
-      const isMinimal = current.every(m => currentWeight - m.weight < threshold);
-      if (isMinimal) {
-        results.push([...current]);
-      }
-      return;
-    }
-    
-    if (index >= members.length) return;
-    
-    // Include current member
-    findCombos(index + 1, [...current, members[index]], currentWeight + members[index].weight);
-    // Skip current member
-    findCombos(index + 1, current, currentWeight);
-  };
-  
-  findCombos(0, [], 0);
-  
-  // Sort by number of members, then by total weight
-  return results
-    .sort((a, b) => a.length - b.length || a.reduce((s, m) => s + m.weight, 0) - b.reduce((s, m) => s + m.weight, 0))
-    .slice(0, 10); // Limit to 10 combinations
-}
 
 export default function Settings() {
   const params = useParams();
@@ -70,6 +36,7 @@ export default function Settings() {
 
   const { data: members, isLoading: membersLoading, error: membersError } = useGetMembers(accountAddress);
   const { threshold, totalWeight, isLoading: thresholdLoading, error: thresholdError } = useGetThreshold(accountAddress);
+
 
   // Modal/form states
   const [showAddMember, setShowAddMember] = useState(false);
@@ -176,6 +143,7 @@ export default function Settings() {
       { transaction: tx, waitForTransaction: true },
       {
         onSuccess: (result) => {
+        // TODO: implement proper handling of settings actions, redirect to transactions page
           setSuccess(`Transaction successful! Digest: ${result.digest}`);
           queryClient.invalidateQueries({ queryKey: queryKey.members(accountAddress) });
           queryClient.invalidateQueries({ queryKey: [queryKey.threshold(accountAddress)] });
@@ -282,7 +250,7 @@ export default function Settings() {
             <svg className="w-5 h-5 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            Members Settings
+            Member Settings
           </h2>
 
           <div className="mb-4 text-sm text-foreground/60">
@@ -557,6 +525,9 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Allowed Authenticators Section */}
+      <AllowedAuthenticators address={accountAddress} />
     </div>
   );
 }

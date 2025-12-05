@@ -139,6 +139,8 @@ export function AccountSelector(){
                                 setIsOpen(false);
                                 if (prevAccount && pathname.includes(prevAccount)) {
                                     redirect(pathname.replace(prevAccount, account));
+                                } else {
+                                    redirect(`/${account}`);
                                 }
                             }}
                             className={`w-full px-4 py-2 text-left text-sm hover:bg-foreground/5 transition ${
