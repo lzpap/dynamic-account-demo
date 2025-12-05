@@ -4,8 +4,10 @@ import { Transactions } from "./Transactions";
 import { Members } from "./Members";
 import { Threshold } from "./Threshold";
 import { AccountHistory } from "./AccountHistory";
+import { generateAvatar } from "@/lib/utils/generateAvatar";
 
 export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
+  const avatarUrl = generateAvatar(isafeAccount, 80);
   // if (!isafeAccount) {
   //   return (
   //     <div className="max-w-4xl mx-auto mt-8 p-6 bg-foreground/5 rounded-lg">
@@ -20,9 +22,17 @@ export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
     <div className="max-w-7xl mx-auto mt-8 space-y-6">
       {/* Account Overview - Single Row Layout */}
       <div className="bg-gradient-to-br from-foreground/5 to-foreground/10 rounded-xl p-8 shadow-sm">
-        <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          Account Overview
-        </h2>
+        <div className="flex items-center gap-4 mb-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={avatarUrl} 
+            alt="Account Avatar" 
+            className="w-16 h-16 rounded-full shadow-md"
+          />
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Account Overview
+          </h2>
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Account Address */}
