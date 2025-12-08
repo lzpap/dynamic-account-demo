@@ -1,6 +1,13 @@
 "use client";
 
-export default function ProposedTransactions() {
+import { DbTransaction } from "@/hooks/useGetAccountTransactions";
+import { shortenAddress } from "@/lib/utils/shortenAddress";
+
+interface ProposedTransactionsProps {
+  transactions: DbTransaction[];
+}
+
+export default function ProposedTransactions({ transactions }: ProposedTransactionsProps) {
   return (
     <div className="bg-foreground/5 rounded-xl p-6 border border-foreground/10">
       <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -11,53 +18,59 @@ export default function ProposedTransactions() {
       </h2>
 
       <div className="mb-4 text-sm text-foreground/60">
-        Transactions awaiting approval from members
+        {transactions.length} transaction{transactions.length !== 1 ? "s" : ""} awaiting approval
       </div>
 
-      {/* Empty state */}
-      <div className="bg-background rounded-lg border border-foreground/10 p-8 text-center">
-        <svg
-          className="mx-auto h-12 w-12 text-foreground/30"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-        <h3 className="mt-3 text-sm font-medium text-foreground/80">No proposed transactions</h3>
-        <p className="mt-1 text-sm text-foreground/50">
-          There are no transactions waiting for approval.
-        </p>
-      </div>
-
-      {/* Example transaction item structure (commented for reference)
-      <div className="space-y-3">
-        <div className="bg-background rounded-lg border border-foreground/10 p-4 hover:border-foreground/20 transition">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-foreground">Transaction Title</p>
-                <p className="text-sm text-foreground/60">Proposed by 0x123...abc</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-foreground">2/3 approvals</p>
-              <p className="text-xs text-foreground/50">1 more needed</p>
-            </div>
-          </div>
+      {transactions.length === 0 ? (
+        /* Empty state */
+        <div className="bg-background rounded-lg border border-foreground/10 p-8 text-center">
+          <svg
+            className="mx-auto h-12 w-12 text-foreground/30"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <h3 className="mt-3 text-sm font-medium text-foreground/80">No proposed transactions</h3>
+          <p className="mt-1 text-sm text-foreground/50">
+            There are no transactions waiting for approval.
+          </p>
         </div>
-      </div>
-      */}
+      ) : (
+        <div className="space-y-3">
+          {transactions.map((tx) => (
+            <div
+              key={tx.transaction_digest}
+              className="bg-background rounded-lg border border-foreground/10 p-4 hover:border-foreground/20 transition"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-mono text-sm text-foreground">{shortenAddress(tx.transaction_digest)}</p>
+                    <p className="text-sm text-foreground/60">Proposed by {shortenAddress(tx.proposer_address)}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded text-xs font-medium">
+                    {tx.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

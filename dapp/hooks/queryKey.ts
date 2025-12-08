@@ -12,4 +12,5 @@ export const queryKey = {
     totalWeight: (id: string) => [...queryKey.all, 'total-weight', id],
     member_accounts: (address: string) => [...queryKey.all, 'member-accounts', address],
     allowed_authenticators: (account_id: string) => [...queryKey.all, 'allowed-authenticators', account_id],
+    transactions: (account_id: string) => [...queryKey.all, 'transactions', account_id],
 };
