@@ -1,5 +1,5 @@
 use fastcrypto::encoding::{Base64, Encoding};
-use iota_types::{base_types::IotaAddress, event::Event};
+use iota_types::{base_types::IotaAddress, event::Event, transaction::Transaction, digests::TransactionDigest};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
@@ -7,6 +7,9 @@ use crate::config::IsafeIndexerConfig;
 
 pub(crate) enum IsafeEvent {
     AccountCreated(AccountCreatedEvent),
+    TransactionProposed(TransactionProposedEvent),
+    TransactionApproved(TransactionApprovedEvent),
+    TransactionApprovalThresholdReached(TransactionApprovalThresholdReachedEvent),
 }
 
 impl IsafeEvent {
@@ -24,6 +27,9 @@ impl IsafeEvent {
 
         Ok(match event.type_.name.as_str() {
             "AccountCreatedEvent" => Some(Self::AccountCreated(bcs::from_bytes(&event.contents)?)),
+            "TransactionProposedEvent" => Some(Self::TransactionProposed(bcs::from_bytes(&event.contents)?)),
+            "TransactionApprovedEvent" => Some(Self::TransactionApproved(bcs::from_bytes(&event.contents)?)),
+            "TransactionApprovalThresholdReachedEvent" => Some(Self::TransactionApprovalThresholdReached(bcs::from_bytes(&event.contents)?)),
             _ => None,
         })
     }
@@ -49,6 +55,30 @@ pub struct AuthenticatorInfoV1 {
     pub package: IotaAddress,
     pub module_name: String,
     pub function_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionProposedEvent{
+    pub account_id: IotaAddress,
+    pub transaction_digest: Vec<u8>,
+    pub proposer: IotaAddress,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionApprovedEvent{
+    pub account_id: IotaAddress,
+    pub transaction_digest: Vec<u8>,
+    pub approver: IotaAddress,
+    pub approver_weight: u64,
+    pub total_approved_weight: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionApprovalThresholdReachedEvent{
+    pub account_id: IotaAddress,
+    pub transaction_digest: Vec<u8>,
+    pub total_approved_weight: u64,
+    pub threshold: u64,
 }
 
 #[test]

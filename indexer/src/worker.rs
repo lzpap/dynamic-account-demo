@@ -1,3 +1,4 @@
+use axum::extract::FromRef;
 use futures::FutureExt;
 use std::{panic::AssertUnwindSafe, path::PathBuf, sync::Arc};
 
@@ -10,12 +11,14 @@ use iota_sdk::IotaClientBuilder;
 use iota_types::{
     base_types::ObjectID, effects::TransactionEffects, effects::TransactionEffectsAPI,
     execution_status::ExecutionStatus, full_checkpoint_content::CheckpointData,
+    digests::TransactionDigest,
 };
 
 use diesel::Connection;
 
 use crate::db::{pool::DbConnectionPool, queries};
 use crate::{config::IsafeIndexerConfig, events::IsafeEvent};
+use crate::db::models::Status;
 use anyhow::{Result, anyhow, bail};
 use async_trait::async_trait;
 use prometheus::Registry;
@@ -122,6 +125,8 @@ impl IsafeWorker {
                     }
                 }
             }
+
+            // TODO: if we see a tranaction where sender is an existing iSafe account, we may want to update the status to Executed
         }
 
         Ok(())
@@ -130,7 +135,7 @@ impl IsafeWorker {
     fn process_event(&self, event: IsafeEvent, timestamp: u64) -> anyhow::Result<()> {
         match event {
             IsafeEvent::AccountCreated(acct_event) => {
-                warn!(
+                info!(
                     "Processing AccountCreated event for account: {}",
                     acct_event.account_id
                 );
@@ -150,6 +155,74 @@ impl IsafeWorker {
                         member.member_address, member.weight, acct_event.account_id
                     );
                 }
+            }
+            IsafeEvent::TransactionProposed(tx_event) => {
+                // on-chain type shall always be 32 bytes
+                let tx_digest_bytes: [u8; 32] = tx_event.transaction_digest.try_into().expect("Invalid transaction digest length");
+                let tx_digest = TransactionDigest::from(tx_digest_bytes);
+                info!(
+                    "Processing TransactionProposed event for transaction: {:?}",
+                    tx_digest
+                );
+                let mut conn = self.pool.get_connection()?;
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::insert_transaction_entry(
+                        conn,
+                        tx_digest.to_string(),
+                        &tx_event.account_id,
+                        &tx_event.proposer,
+                        Status::Proposed.into(),
+                        timestamp,
+                    )
+                })?;
+                info!(
+                    "Inserted proposed transaction {} for account {}",
+                    tx_digest.to_string(),
+                    tx_event.account_id
+                );
+            }
+            IsafeEvent::TransactionApproved(tx_event) => {
+                let tx_digest_bytes: [u8; 32] = tx_event.transaction_digest.try_into().expect("Invalid transaction digest length");
+                let tx_digest = TransactionDigest::from(tx_digest_bytes);
+                info!(
+                    "Processing TransactionApproved event for transaction: {:?}",
+                    tx_digest
+                );
+                let mut conn = self.pool.get_connection()?;
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::insert_approval_entry(
+                        conn,
+                        tx_digest.to_string(),
+                        &tx_event.approver,
+                        tx_event.approver_weight,
+                        timestamp,
+                    )
+                })?;
+                info!(
+                    "Inserted approval for transaction {} by approver {}",
+                    tx_digest.to_string(),
+                    tx_event.approver
+                );
+            }
+            IsafeEvent::TransactionApprovalThresholdReached(tx_event) => {
+                let tx_digest_bytes: [u8; 32] = tx_event.transaction_digest.try_into().expect("Invalid transaction digest length");
+                let tx_digest = TransactionDigest::from(tx_digest_bytes);
+                info!(
+                    "Processing TransactionApprovalThresholdReached event for transaction: {:?}",
+                    tx_digest
+                );
+                let mut conn = self.pool.get_connection()?;
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::update_transaction_status(
+                        conn,
+                        tx_digest.to_string(),
+                        Status::Approved.into(),
+                    )
+                })?;
+                info!(
+                    "Updated transaction {} status to Approved",
+                    tx_digest.to_string()
+                );
             }
         }
         Ok(())

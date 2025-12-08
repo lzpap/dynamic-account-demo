@@ -8,22 +8,23 @@ use axum::{
     extract::{Path, State},
     routing::get,
 };
-use iota_types::base_types::IotaAddress;
+use iota_types::{base_types::IotaAddress};
 use tower_http::cors::{Any, CorsLayer};
+use crate::db::queries;
 
 use crate::{
     api::{
         ApiState,
         error::ApiError,
-        responses::GetAccountsResponse,
+        responses::{GetAccountsResponse, GetTransactionsResponse},
     },
-    db::queries,
 };
 
 pub fn routes() -> Router<ApiState> {
     Router::new()
         .route("/health", get(health_check))
         .route("/accounts/{member_address}", get(get_accounts))
+        .route("/transactions/{account_address}", get(get_transactions)) 
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -48,4 +49,19 @@ async fn get_accounts(
     let accounts = queries::get_accounts_for_member(&mut conn, &address).map_err(|err| ApiError::Database(err))?;
 
     Ok(GetAccountsResponse { accounts })
+}
+
+async fn get_transactions(
+    State(state): State<ApiState>,
+    Path(account_address): Path<String>,
+) -> Result<GetTransactionsResponse, ApiError> {
+    let address = IotaAddress::from_str(&account_address)
+        .map_err(|_| ApiError::BadRequest("Invalid account address".to_string()))?;
+    let mut conn = state.pool.get_connection().map_err(|err| ApiError::Database(err))?;
+
+    let transactions = queries::get_transactions_for_account(&mut conn, &address)
+        .map_err(|err| ApiError::Database(err))?;
+
+
+    Ok(GetTransactionsResponse { transactions })
 }

@@ -7,10 +7,12 @@ use iota_types::base_types::SequenceNumber;
 use iota_types::move_authenticator::MoveAuthenticator;
 use iota_types::quorum_driver_types::ExecuteTransactionRequestType;
 use iota_types::signature::GenericSignature;
-use iota_types::transaction::{CallArg, Transaction};
+use iota_types::transaction::{CallArg, SenderSignedData, Transaction};
+use fastcrypto::encoding::{Base64, Encoding};
 use std::io::stdin;
 use std::io::{stdout, Write};
 use std::str::FromStr;
+use std::vec;
 
 const MODULE: &str = "transfer";
 const FUNCTION: &str = "public_transfer";
@@ -46,7 +48,19 @@ async fn main() -> Result<()> {
         )
         .await?;
 
-    println!("{:?}", data.digest().into_inner());
+    println!("TX digest as Vec<u8>: {:?}", data.digest().into_inner());
+    println!("TX digest base58: {}\n", data.digest().to_string());
+
+    let ser = Base64::encode(bcs::to_bytes(&data)?);
+
+    println!("Base64 bcs serilaized TxData data: {:#?}\n", ser);
+
+    let ss_tx = SenderSignedData::new(data.clone(), vec![]);
+
+    let ser = Base64::encode(bcs::to_bytes(&ss_tx)?);
+
+    println!("Base64 bcs serilaized SenderSignedData data: {:#?}\n", ser);
+
 
     let _ = stdout().flush();
     stdin().read_line(&mut String::new()).unwrap();

@@ -316,9 +316,30 @@ public fun propose_transaction(
         transaction_digest,
         proposer: member_address,
     });
+
+    // these two should be equal since the proposer is the first approver
+    let total_approver_weight = total_approves(self, transaction_digest);
+    let member_weight = members(self).borrow(member_address).weight();
+
+    emit(TransactionApprovedEvent {
+        account: self.get_address(),
+        transaction_digest,
+        approver: member_address,
+        approver_weight: member_weight,
+        total_approver_weight: total_approver_weight,
+    });
+
+    if (total_approver_weight >= threshold(self)) {
+        emit(TransactionApprovalThresholdReachedEvent {
+            account: self.get_address(),
+            transaction_digest,
+            total_approver_weight,
+            threshold: threshold(self),
+        });
+    }
 }
 
-/// Approves a proposed transaction.
+// Approves a transaction proposed to the account.
 public fun approve_transaction(
     self: &mut Account,
     transaction_digest: vector<u8>,

@@ -3,6 +3,7 @@
 
 use iota_types::base_types::IotaAddress;
 use serde::{Deserialize, Serialize};
+use crate::db::models::StoredTransaction;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,6 +12,18 @@ pub struct GetAccountsResponse {
 }
 
 impl axum::response::IntoResponse for GetAccountsResponse {
+    fn into_response(self) -> axum::response::Response {
+        axum::Json(self).into_response()
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetTransactionsResponse {
+    pub transactions: Vec<StoredTransaction>,
+}
+
+impl axum::response::IntoResponse for GetTransactionsResponse {
     fn into_response(self) -> axum::response::Response {
         axum::Json(self).into_response()
     }
