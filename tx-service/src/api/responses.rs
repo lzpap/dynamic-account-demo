@@ -10,6 +10,8 @@ pub struct TransactionResponse {
     pub bcs: String,
     pub sender: IotaAddress,
     pub added_at: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 impl axum::response::IntoResponse for TransactionResponse {
@@ -22,6 +24,7 @@ impl axum::response::IntoResponse for TransactionResponse {
 #[derive(Deserialize)]
 pub struct AddTxRequest {
     pub tx_bytes: String,
+    pub description: Option<String>,
 }
 
 // Response body

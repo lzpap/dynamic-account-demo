@@ -16,6 +16,7 @@ use crate::db::schema::{StoredTransaction, transactions};
 pub fn insert_transaction(
     conn: &mut SqliteConnection,
     tx_data: &TransactionData,
+    description: Option<String>,
     at: u64,
 ) -> Result<()> {
     let sender = tx_data.sender();
@@ -27,6 +28,7 @@ pub fn insert_transaction(
             transactions::sender.eq(sender.to_string()),
             transactions::tx_data.eq(encoded_tx_base64),
             transactions::added_at.eq(at as i64),
+            transactions::description.eq(description),
         ))
         .execute(conn)?;
     Ok(())

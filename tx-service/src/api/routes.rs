@@ -22,7 +22,7 @@ use crate::{
         error::ApiError,
         responses::{AddTxRequest, AddTxResponse, TransactionResponse},
     },
-    db::{queries, schema::transactions::digest},
+    db::{queries, schema::transactions::{description, digest}},
 };
 
 pub fn routes() -> Router<ApiState> {
@@ -61,6 +61,7 @@ async fn get_transaction_by_digest(
         bcs: tx.tx_data,
         sender: IotaAddress::from_str(&tx.sender).map_err(|err| ApiError::Internal(err))?,
         added_at: tx.added_at as u64,
+        description: tx.description,
     })
 }
 
@@ -85,7 +86,7 @@ async fn add_transaction(
         .get_connection()
         .map_err(|err| ApiError::Database(err))?;
 
-    queries::insert_transaction(&mut conn, &tx_data, now).map_err(|err| ApiError::Database(err))?;
+    queries::insert_transaction(&mut conn, &tx_data, payload.description, now).map_err(|err| ApiError::Database(err))?;
     Ok(Json(AddTxResponse {
         digest: tx_digest.to_string(),
         added_at: now,

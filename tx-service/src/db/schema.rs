@@ -10,6 +10,7 @@ pub struct StoredTransaction {
     pub sender: String,
     pub added_at: i64,
     pub tx_data: String,
+    pub description: Option<String>,
 }
 
 diesel::table! {
@@ -18,5 +19,6 @@ diesel::table! {
         sender -> Text,
         added_at -> Int8,
         tx_data -> Text,
+        description -> Nullable<Text>,
     }
 }
