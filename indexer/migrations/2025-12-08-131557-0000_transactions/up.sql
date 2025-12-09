@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     account_address TEXT NOT NULL,
     proposer_address TEXT NOT NULL,
     status TEXT NOT NULL,
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (account_address) REFERENCES accounts(account_address) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS approvals (

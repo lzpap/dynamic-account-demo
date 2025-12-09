@@ -9,9 +9,7 @@ use iota_data_ingestion_core::{
 use iota_json_rpc_types::{IotaObjectDataOptions, IotaTransactionBlockResponseOptions};
 use iota_sdk::IotaClientBuilder;
 use iota_types::{
-    base_types::ObjectID, effects::TransactionEffects, effects::TransactionEffectsAPI,
-    execution_status::ExecutionStatus, full_checkpoint_content::CheckpointData,
-    digests::TransactionDigest,
+    base_types::ObjectID, digests::TransactionDigest, effects::{TransactionEffects, TransactionEffectsAPI}, execution_status::ExecutionStatus, full_checkpoint_content::{CheckpointData, CheckpointTransaction}
 };
 
 use diesel::Connection;
@@ -125,10 +123,38 @@ impl IsafeWorker {
                     }
                 }
             }
-
-            // TODO: if we see a tranaction where sender is an existing iSafe account, we may want to update the status to Executed
+            self.process_transaction(transaction)?;
         }
 
+        Ok(())
+    }
+
+    fn process_transaction(&self, transaction: &CheckpointTransaction) -> anyhow::Result<()> {
+        // We could exract the sender and look into our DB to see if there exists an account with that id
+        // But this would be highly inefficient to do for every transaction
+        // Instead, we could take a look at the input objects and see if any of them is an account object + the sender is the account
+        // TODO: This will not work for now as the checkpoint content doesn't have the authenticator inputs yet...
+        let expexted_type = format!("{}::account::Account", self.config.package_address);
+        for input in transaction.input_objects.iter() {
+            match  input.struct_tag() {
+                Some(tag) if tag.to_canonical_string(true) == expexted_type => {
+                    // If this object id is the sender of the tx, we have a hit
+                    if transaction.transaction.sender_address().to_inner() == input.id().into_bytes() {
+                        let mut conn = self.pool.get_connection()?;
+                        let tx_digest = transaction.transaction.digest().to_string();
+                        conn.transaction::<_, anyhow::Error, _>(|conn| {
+                            queries::update_transaction_status(conn, tx_digest.clone(), Status::Executed.into())
+                        })?;
+                        info!(
+                            "Updated transaction {} status to Executed",
+                            tx_digest
+                        );
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
         Ok(())
     }
 
@@ -140,6 +166,29 @@ impl IsafeWorker {
                     acct_event.account_id
                 );
                 let mut conn = self.pool.get_connection()?;
+                
+                // First, insert the account itself
+                let authenticator = format!(
+                    "{}::{}::{}",
+                    acct_event.authenticator.package,
+                    acct_event.authenticator.module_name,
+                    acct_event.authenticator.function_name
+                );
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::insert_new_account_entry(
+                        conn,
+                        acct_event.account_id,
+                        acct_event.threshold,
+                        authenticator,
+                        timestamp,
+                    )
+                })?;
+                info!(
+                    "Created account {} with threshold {}",
+                    acct_event.account_id, acct_event.threshold
+                );
+
+                // Then insert members
                 for member in acct_event.members {
                     conn.transaction::<_, anyhow::Error, _>(|conn| {
                         queries::insert_member_entry(

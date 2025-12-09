@@ -4,7 +4,17 @@ use std::fmt::Debug;
 use diesel::{Associations, Identifiable, Insertable, Queryable, Selectable, prelude::AsChangeset};
 use diesel::ExpressionMethods;
 use serde::Serialize;
-use crate::db::schema::{members, transactions, approvals};
+use crate::db::schema::{members, transactions, approvals, accounts};
+
+#[derive(Queryable, Identifiable, Debug, Clone)]
+#[diesel(primary_key(account_address))]
+#[diesel(table_name = accounts)]
+pub struct Account {
+    pub account_address: String,
+    pub threshold: i32,
+    pub authenticator: String,
+    pub created_at: i64,
+}
 
 #[derive(Queryable, Identifiable, Debug, Clone)]
 #[diesel(table_name = members)]

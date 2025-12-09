@@ -12,6 +12,24 @@ use crate::db::schema::approvals;
 use crate::db::schema::transactions;
 use crate::db::models;
 
+pub fn insert_new_account_entry(
+    conn: &mut SqliteConnection,
+    account: IotaAddress,
+    threshold: u64,
+    authenticator: String,
+    at: u64,
+) -> Result<()> {
+    insert_into(crate::db::schema::accounts::table)
+        .values((
+            crate::db::schema::accounts::account_address.eq(account.to_string()),
+            crate::db::schema::accounts::threshold.eq(threshold as i32),
+            crate::db::schema::accounts::authenticator.eq(authenticator),
+            crate::db::schema::accounts::created_at.eq(at as i64),
+        ))
+        .execute(conn)?;
+    Ok(())
+}
+
 pub fn insert_member_entry(
     conn: &mut SqliteConnection,
     account: IotaAddress,

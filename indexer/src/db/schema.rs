@@ -1,6 +1,15 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    accounts (account_address) {
+        account_address -> Nullable<Text>,
+        threshold -> Integer,
+        authenticator -> Text,
+        created_at -> Int8,
+    }
+}
+
+diesel::table! {
     approvals (transaction_digest, approver_address) {
         transaction_digest -> Text,
         approver_address -> Text,
@@ -30,5 +39,7 @@ diesel::table! {
 }
 
 diesel::joinable!(approvals -> transactions (transaction_digest));
+diesel::joinable!(members -> accounts (account_address));
+diesel::joinable!(transactions -> accounts (account_address));
 
-diesel::allow_tables_to_appear_in_same_query!(approvals, members, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(accounts, approvals, members, transactions,);
