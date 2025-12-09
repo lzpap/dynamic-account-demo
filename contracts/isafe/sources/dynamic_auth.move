@@ -8,7 +8,6 @@ use iota::package_metadata::PackageMetadataV1;
 use isafe::account::{
     Account,
     ensure_tx_sender_is_account,
-    attach_auth_info_v1,
     rotate_auth_info_v1
 };
 use isafe::members::{Self, Members, Member};
@@ -482,15 +481,12 @@ public fun build_and_publish(builder: AccountBuilder, ctx: &mut TxContext): addr
     // We know the option is some because of the assert above.
     let authenticator = authenticator_opt.destroy_some();
 
-    let mut ticket = isafe::account::create_ticket_with_default_authenticator(AppKey {}, ctx);
+    let mut ticket = isafe::account::create_ticket_with_default_authenticator(AppKey {}, authenticator, ctx);
 
     let members = members::create(members, weights);
     let members_vector = *members.as_vector();
 
     let account = isafe::account::borrow_account_from_ticket_mut(&mut ticket);
-
-    // First, let's attach the authenticator.
-    attach_auth_info_v1(account, authenticator, AppKey {});
 
     // Then add all the data as dynamic fields.
     account.add_dynamic_field(members_key(), members, AppKey {});

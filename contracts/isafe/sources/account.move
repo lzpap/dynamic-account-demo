@@ -5,6 +5,7 @@ use iota::dynamic_field;
 use iota::table::{Table, new as new_table};
 use std::ascii::String;
 use std::type_name::{get, into_string};
+use iota::account;
 
 // ---------------------------------------- Errors ----------------------------------------
 
@@ -38,6 +39,7 @@ public struct Account has key, store {
 // This struct cannot be stored on-chain.
 public struct AccountTicket {
     account: Account,
+    authenticator: AuthenticatorInfoV1<Account>,
 }
 
 // Create a new account ticket with a default authenticator app key of type T.
@@ -45,6 +47,7 @@ public struct AccountTicket {
 // to share the account object.
 public fun create_ticket_with_default_authenticator<T: drop>(
     _app_key: T,
+    authenticator: AuthenticatorInfoV1<Account>,
     ctx: &mut TxContext,
 ): AccountTicket {
     let default_authenticator = get<T>().into_string();
@@ -52,22 +55,25 @@ public fun create_ticket_with_default_authenticator<T: drop>(
     let mut allowed_authenticators: Table<String, bool> = new_table(ctx);
     allowed_authenticators.add(default_authenticator, true);
 
+    // is the authenticator function from the module that the AppKey T belongs to?
+    let app_key_type = get<T>();
+    // TODO: verify that the authenticator function belongs to the module of app_key_type
+
     AccountTicket {
         account: Account {
             id: object::new(ctx),
             allowed_authenticators,
         },
+        authenticator,
     }
 }
 
-#[allow(lint(share_owned))]
 // Consume AccountTicket and share the account object publicly.
-// Since Accountticket must come from the same tx, we know the account is not owned by anyone else yet.
+// Since AccountTicket must come from the same tx, we know the account is not owned by anyone else yet.
 public fun create_account_from_ticket(ticket: AccountTicket): address {
-    let AccountTicket { account } = ticket;
+    let AccountTicket { account, authenticator } = ticket;
     let account_address = account.borrow_id().to_address();
-    assert!(has_auth_info_v1(account.borrow_id()), ENoAuthenticatorAttached);
-    transfer::public_share_object(account);
+    account::create_account_v1(account, authenticator);
     account_address
 }
 
@@ -108,20 +114,6 @@ public fun remove_allowed_authenticator<T: drop>(
     self.allowed_authenticators.remove(app_key_type);
 }
 
-// Attach the `authenticator` instance to the account.
-// Aborts if:
-// - the app key is not authorized to modify the account.
-// - an authenticator is already attached to the account.
-public fun attach_auth_info_v1<T: drop>(
-    self: &mut Account,
-    authenticator: AuthenticatorInfoV1<Account>,
-    app_key: T,
-) {
-    assert!(app_key_allowed(self, app_key), EAppKeyNotAuthorized);
-    let proof = iota::account::check_auth_info_v1_compatibility(self, authenticator);
-    iota::account::attach_auth_info_v1(&mut self.id, proof);
-}
-
 /// Rotate the account-related authenticator.
 /// Aborts if:
 /// - the app key is not authorized to modify the account.
@@ -132,8 +124,8 @@ public fun rotate_auth_info_v1<T: drop>(
     app_key: T,
 ): AuthenticatorInfoV1<Account> {
     assert!(app_key_allowed(self, app_key), EAppKeyNotAuthorized);
-    let proof = iota::account::check_auth_info_v1_compatibility(self, authenticator);
-    iota::account::rotate_auth_info_v1(&mut self.id, proof)
+    // TODO check that the authenticator function belongs to the module of app_key_type
+    iota::account::rotate_auth_info_v1(self, authenticator)
 }
 
 // -------------------------------- Dynamic Field Interface --------------------------------

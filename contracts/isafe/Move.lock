@@ -21,6 +21,6 @@ id = "MoveStdlib"
 source = { git = "https://github.com/iotaledger/iota.git", rev = "vm-lang/aa-auth/8116-feature-branch", subdir = "crates/iota-framework/packages/move-stdlib" }
 
 [move.toolchain-version]
-compiler-version = "1.9.2-rc"
+compiler-version = "1.13.0-alpha"
 edition = "2024"
 flavor = "iota"

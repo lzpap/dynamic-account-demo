@@ -227,7 +227,7 @@ fun setup_account(
     weights: vector<u64>,
     threshold: u64,
     guardian: Option<vector<u8>>,
-    authenticator: AuthenticatorInfoV1<Account,
+    authenticator: AuthenticatorInfoV1<Account>,
 ): address {
     // Create an iSafe account with 3 members and an authenticator.
     let mut builder = dynamic_auth::create_account_builder().add_authenticator_to_builder(
@@ -248,8 +248,8 @@ fun setup_account(
     builder.build_and_publish(scenario.ctx())
 }
 
-fun dummy_authenticator(): AuthenticatorInfoV1 {
-    create_auth_info_v1_for_testing(
+fun dummy_authenticator(): AuthenticatorInfoV1<Account> {
+    create_auth_info_v1_for_testing( 
         @0xABBA,
         b"dummy".to_ascii_string(),
         b"dummy_function".to_ascii_string(),
