@@ -28,7 +28,7 @@ pub struct StoredMember {
 
 #[derive(Queryable, Identifiable, Debug, Clone, Insertable, Selectable, AsChangeset)]
 #[diesel(table_name = transactions)]
-#[diesel(primary_key(transaction_digest))]
+#[diesel(primary_key(transaction_digest, account_address))]
 #[derive(Serialize)]
 pub struct StoredTransaction {
     pub transaction_digest: String,
@@ -77,6 +77,7 @@ impl From<Status> for String {
 #[diesel(belongs_to(StoredTransaction, foreign_key = transaction_digest))]
 pub struct StoredApproval {
     pub transaction_digest: String,
+    pub account_address: String,
     pub approver_address: String,
     pub approved_at: i64,
 }

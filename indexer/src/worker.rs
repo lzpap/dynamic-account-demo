@@ -242,6 +242,7 @@ impl IsafeWorker {
                     queries::insert_approval_entry(
                         conn,
                         tx_digest.to_string(),
+                        &tx_event.account_id,
                         &tx_event.approver,
                         tx_event.approver_weight,
                         timestamp,

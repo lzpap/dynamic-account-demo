@@ -119,6 +119,7 @@ pub fn insert_transaction_entry(
 pub fn insert_approval_entry(
     conn: &mut SqliteConnection,
     tx_digest: String,
+    account: &IotaAddress,
     approver: &IotaAddress,
     approver_weight: u64,
     at: u64,
@@ -126,6 +127,7 @@ pub fn insert_approval_entry(
     insert_into(approvals::table)
         .values((
             approvals::transaction_digest.eq(tx_digest),
+            approvals::account_address.eq(account.to_string()),
             approvals::approver_address.eq(approver.to_string()),
             approvals::approver_weight.eq(approver_weight as i32),
             approvals::approved_at.eq(at as i64),

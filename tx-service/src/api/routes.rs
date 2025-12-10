@@ -69,14 +69,11 @@ async fn add_transaction(
     State(state): State<ApiState>,
     Json(payload): Json<AddTxRequest>,
 ) -> Result<Json<AddTxResponse>, ApiError> {
-    let sender_signed_data = bcs::from_bytes::<iota_types::transaction::SenderSignedData>(
+    let tx_data = bcs::from_bytes::<iota_types::transaction::TransactionData>(
         &Base64::decode(&payload.tx_bytes)
             .map_err(|_| ApiError::BadRequest("Invalid base64 transaction bytes".to_string()))?,
     )
     .map_err(|_| ApiError::BadRequest("Invalid transaction data".to_string()))?;
-
-    // TODO: expect a TransactionData instead of SenderSignedData
-    let tx_data = sender_signed_data.transaction_data();
 
     let tx_digest = tx_data.digest();
     let now = Utc::now().timestamp() as u64;

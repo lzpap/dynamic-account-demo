@@ -12,6 +12,7 @@ diesel::table! {
 diesel::table! {
     approvals (transaction_digest, approver_address) {
         transaction_digest -> Text,
+        account_address -> Text,
         approver_address -> Text,
         approved_at -> Int8,
         approver_weight -> Integer,
@@ -29,7 +30,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    transactions (transaction_digest) {
+    transactions (transaction_digest, account_address) {
         transaction_digest -> Text,
         account_address -> Text,
         proposer_address -> Text,
@@ -38,7 +39,6 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(approvals -> transactions (transaction_digest));
 diesel::joinable!(members -> accounts (account_address));
 diesel::joinable!(transactions -> accounts (account_address));
 
