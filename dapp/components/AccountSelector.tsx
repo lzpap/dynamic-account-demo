@@ -1,18 +1,14 @@
 'use client';
 
 import { queryKey, useGetAccountsForAddress } from "@/hooks";
+import { generateAvatar } from "@/lib/utils/generateAvatar";
 import { useISafeAccount } from "@/providers/ISafeAccountProvider";
 import { Button } from "@iota/apps-ui-kit";
 import { useAccounts, useCurrentAccount, useCurrentWallet } from "@iota/dapp-kit";
 import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import { redirect, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-
-// TODO: query backend indexer for address -> account mapping
-const addressToAccountMap: Record<string, string[]> = {
-    "0x7f5ef659f341e3256d4abd256c66f754fcf78bf574034f5d5ae8d11e55207d20": ["0x799e53ed6e11430ee67cfbd2d8d81ccd89757f94544956f97049e9088657f71b"],
-    "0xdef456": ["account2"],
-};
 
 export function AccountSelector(){
     const {isafeAccount, toggleAccount } = useISafeAccount();
@@ -29,14 +25,7 @@ export function AccountSelector(){
         redirect('/create');
     };
 
-    // Clear iSafe account selection when wallet account changes
-    useEffect(() => {
-        if (isafeAccount) {
-            toggleAccount('');
-            redirect('/');
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedWalletAccount?.address]);
+
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -65,7 +54,6 @@ export function AccountSelector(){
 
     // wallet is connected here
     // if there doesn't exist iSafe accounts for the wallet, prompt the user to create one
-
     if (!accounts) {
         return (
             <button
@@ -77,9 +65,6 @@ export function AccountSelector(){
         );
     }
 
-    // when there is at least one iSafe account mapped, prompt the user to select one
-    console.log("Mapped Accounts:", accounts);
-
     return (
         <div ref={dropdownRef} className="relative w-full">
             <button
@@ -87,16 +72,27 @@ export function AccountSelector(){
                     queryClient.invalidateQueries({ queryKey: queryKey.member_accounts(selectedWalletAccount.address) });
                     setIsOpen(!isOpen)
                 }}
-                className={`w-full px-4 py-2 rounded-full text-sm font-medium transition flex items-center justify-between ${
+                className={`w-full px-4 py-3 rounded-full text-sm font-medium transition flex items-center justify-between ${
                     isafeAccount 
                         ? 'bg-foreground text-background hover:bg-foreground/90' 
                         : 'bg-foreground/10 text-foreground hover:bg-foreground/20'
                 }`}
             >
-                <span className="truncate">
-                    {isafeAccount 
-                        ? `${isafeAccount.substring(0, 6)}...${isafeAccount.substring(isafeAccount.length - 4)}`
-                        : 'Select Account'}
+                <span className="truncate flex items-center gap-2">
+                    { isafeAccount  && accounts.length > 0  ? (
+                        <>
+                            <Image 
+                                src={generateAvatar(isafeAccount, 28)} 
+                                alt="Account avatar" 
+                                width={28}
+                                height={28}
+                                className="rounded-full flex-shrink-0"
+                            />
+                            {`${isafeAccount.substring(0, 6)}...${isafeAccount.substring(isafeAccount.length - 4)}`}
+                        </>
+                    ) :  accounts.length === 0 ? (
+                        "No iSafe Accounts Found"
+                    ) : 'Select an account'}
                 </span>
                 <svg
                     className={`w-4 h-4 ml-2 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
@@ -112,7 +108,7 @@ export function AccountSelector(){
             {isOpen && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-foreground/20 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                     {/* Reset Option */}
-                    {isafeAccount && (
+                    {isafeAccount && accounts.length > 0 && (
                         <button
                             onClick={() => {
                                 toggleAccount('');
@@ -152,9 +148,18 @@ export function AccountSelector(){
                             }`}
                         >
                             <div className="flex items-center justify-between">
-                                <span className="truncate font-mono text-xs">
-                                    {account.substring(0, 8)}...{account.substring(account.length - 6)}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <Image 
+                                        src={generateAvatar(account, 24)} 
+                                        alt="Account avatar" 
+                                        width={24}
+                                        height={24}
+                                        className="rounded-full flex-shrink-0"
+                                    />
+                                    <span className="truncate font-mono text-xs">
+                                        {account.substring(0, 8)}...{account.substring(account.length - 6)}
+                                    </span>
+                                </div>
                                 {isafeAccount === account && (
                                     <svg className="w-4 h-4 text-green-500 flex-shrink-0 ml-2" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
