@@ -51,9 +51,7 @@ export default function Settings() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  const avatarUrl = generateAvatar(accountAddress, 64);
-
+  
   // Calculate threshold combinations
   const thresholdCombinations = useMemo(() => {
     return findThresholdCombinations(members || [], threshold || 0);
@@ -219,18 +217,6 @@ export default function Settings() {
 
   return (
     <div className="max-w-5xl mx-auto pt-20 space-y-6 pb-12 px-6">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-foreground/5 to-foreground/10 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={avatarUrl} alt="Account Avatar" className="w-12 h-12 rounded-full shadow-md" />
-          <div>
-            <h1 className="text-2xl font-bold">Account Settings</h1>
-            <p className="text-sm text-foreground/60 font-mono">{accountAddress}</p>
-          </div>
-        </div>
-      </div>
-
       {/* Status Messages */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
