@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Transactions } from "./Transactions";
 import { Members } from "./Members";
 import { Threshold } from "./Threshold";
@@ -8,6 +9,13 @@ import { generateAvatar } from "@/lib/utils/generateAvatar";
 
 export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
   const avatarUrl = generateAvatar(isafeAccount, 80);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(isafeAccount);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   // if (!isafeAccount) {
   //   return (
   //     <div className="max-w-4xl mx-auto mt-8 p-6 bg-foreground/5 rounded-lg">
@@ -29,25 +37,25 @@ export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
             alt="Account Avatar" 
             className="w-16 h-16 rounded-full shadow-md"
           />
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Account Overview
-          </h2>
+          <p className="font-mono text-xl break-all leading-relaxed">{isafeAccount}</p>
+          <button
+            onClick={handleCopy}
+            className="p-2 hover:bg-foreground/10 rounded-md transition-colors flex-shrink-0"
+            title={copied ? "Copied!" : "Copy address"}
+          >
+            {copied ? (
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            )}
+          </button>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Account Address */}
-          <div className="bg-background/80 backdrop-blur rounded-lg p-5 border border-foreground/10 hover:border-foreground/20 transition-all hover:shadow-md">
-            <div className="flex items-center gap-2 mb-3">
-              <svg className="w-5 h-5 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
-              <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">Address</h3>
-            </div>
-            <div className="bg-foreground/5 px-3 py-2 rounded-md border border-foreground/10">
-              <p className="font-mono text-xs break-all leading-relaxed">{isafeAccount}</p>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Members Count */}
           <div className="bg-background/80 backdrop-blur rounded-lg p-5 border border-foreground/10 hover:border-foreground/20 transition-all hover:shadow-md">
             <div className="flex items-center gap-2 mb-3">

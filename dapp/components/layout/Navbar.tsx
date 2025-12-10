@@ -11,73 +11,66 @@ export function Navbar() {
     const {isafeAccount } = useISafeAccount();
     const pathname = usePathname();
     return (
-        <nav id="top-navbar" className="fixed top-0 left-0 h-full z-50 backdrop-blur-lg bg-foreground/5 flex flex-col items-center p-4 w-64">
-            <div className="w-full mb-6">
-                <ConnectButton connectText="Connect Wallet" className="w-full" />
+        <nav id="top-navbar" className="fixed top-0 left-0 w-full h-16 z-50 backdrop-blur-lg bg-foreground/5 flex items-center justify-between px-6">
+            <div className="flex items-center gap-6">
+                <Link href="/" className="text-xl font-bold">
+                    iSafe
+                </Link>
+                {isafeAccount && (
+                    <div className="flex items-center gap-1">
+                        <Link 
+                            href={`/${isafeAccount}`} 
+                            className={clsx(
+                                'text-sm font-medium transition px-3 py-2 rounded-md',
+                                pathname === `/${isafeAccount}` 
+                                    ? 'bg-foreground text-background' 
+                                    : 'hover:bg-foreground/10'
+                            )}
+                        >
+                            Overview
+                        </Link>
+                        <Link 
+                            href={`/${isafeAccount}/transactions`} 
+                            className={clsx(
+                                'text-sm font-medium transition px-3 py-2 rounded-md',
+                                pathname === `/${isafeAccount}/transactions` 
+                                    ? 'bg-foreground text-background' 
+                                    : 'hover:bg-foreground/10'
+                            )}
+                        >
+                            Transactions
+                        </Link>
+                        <Link 
+                            href={`/${isafeAccount}/settings`} 
+                            className={clsx(
+                                'text-sm font-medium transition px-3 py-2 rounded-md',
+                                pathname === `/${isafeAccount}/settings` 
+                                    ? 'bg-foreground text-background' 
+                                    : 'hover:bg-foreground/10'
+                            )}
+                        >
+                            Settings
+                        </Link>
+                        <Link 
+                            href="/create" 
+                            className={clsx(
+                                'text-sm font-medium transition px-3 py-2 rounded-md',
+                                pathname === '/create' 
+                                    ? 'bg-foreground text-background' 
+                                    : 'hover:bg-foreground/10'
+                            )}
+                        >
+                            Create
+                        </Link>
+                    </div>
+                )}
             </div>
-            <div className="w-full mb-6">
-                <AccountSelector />
-            </div>
-            {isafeAccount && (
-                <div className="w-full flex flex-col gap-2">
-                    <Link 
-                        href="/" 
-                        className={clsx(
-                            'text-lg font-semibold transition px-3 py-2 rounded-md',
-                            pathname === '/' 
-                                ? 'bg-foreground text-background' 
-                                : 'hover:bg-foreground/10'
-                        )}
-                    >
-                        Home
-                    </Link>
-                    <Link 
-                        href={`/${isafeAccount}`} 
-                        className={clsx(
-                            'text-lg font-semibold transition px-3 py-2 rounded-md',
-                            pathname === `/${isafeAccount}` 
-                                ? 'bg-foreground text-background' 
-                                : 'hover:bg-foreground/10'
-                        )}
-                    >
-                        My Account
-                    </Link>
-                    <Link 
-                        href={`/${isafeAccount}/settings`} 
-                        className={clsx(
-                            'text-lg font-semibold transition px-3 py-2 rounded-md',
-                            pathname === `/${isafeAccount}/settings` 
-                                ? 'bg-foreground text-background' 
-                                : 'hover:bg-foreground/10'
-                        )}
-                    >
-                        Settings
-                    </Link>
-                    <Link 
-                        href={`/${isafeAccount}/transactions`} 
-                        className={clsx(
-                            'text-lg font-semibold transition px-3 py-2 rounded-md',
-                            pathname === `/${isafeAccount}/transactions` 
-                                ? 'bg-foreground text-background' 
-                                : 'hover:bg-foreground/10'
-                        )}
-                    >
-                        Transactions
-                    </Link>
-                    <Link 
-                        href="/create" 
-                        className={clsx(
-                            'text-lg font-semibold transition px-3 py-2 rounded-md',
-                            pathname === '/create' 
-                                ? 'bg-foreground text-background' 
-                                : 'hover:bg-foreground/10'
-                        )}
-                    >
-                        Create
-                    </Link>
+            <div className="flex items-center gap-4">
+                <div className="w-48">
+                    <AccountSelector />
                 </div>
-            )}
-
+                <ConnectButton connectText="Connect Wallet" />
+            </div>
         </nav>
     );
 }

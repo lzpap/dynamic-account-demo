@@ -55,7 +55,7 @@ export default function TransactionsPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto mt-8 space-y-6 pb-12 ml-64 px-6">
+    <div className="max-w-5xl mx-auto pt-20 space-y-6 pb-12 px-6">
       {/* Header */}
       <div className="bg-gradient-to-br from-foreground/5 to-foreground/10 rounded-xl p-6 shadow-sm">
         <div className="flex items-center gap-4">

@@ -19,7 +19,7 @@ export default function AccountHome( ) {
   console.log("Account object fetch error status:", isFetchError);
 
   return (
-        <main className="flex flex-col min-h-screen ml-64">
+        <main className="flex flex-col min-h-screen pt-20">
             {isPendingAccount ? (
               <div className="flex items-center justify-center flex-1">
                 <div className="text-center">
