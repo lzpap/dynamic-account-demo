@@ -1,5 +1,5 @@
 CREATE TABLE accounts (
-    account_address TEXT PRIMARY KEY,
+    account_address TEXT PRIMARY KEY NOT NULL,
     threshold INTEGER NOT NULL,
     authenticator TEXT NOT NULL,
     created_at INTEGER NOT NULL

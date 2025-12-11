@@ -11,8 +11,15 @@ use axum::{
 };
 use chrono::{Local, Utc};
 use fastcrypto::encoding::{Base64, Encoding};
+use iota_json_rpc_types::IotaObjectDataOptions;
+use iota_sdk::IotaClientBuilder;
 use iota_types::{
-    base_types::IotaAddress, digests::TransactionDigest, transaction::TransactionDataAPI,
+    base_types::{IotaAddress},
+    digests::TransactionDigest,
+    move_authenticator::MoveAuthenticator,
+    object::Owner::Shared,
+    signature::GenericSignature,
+    transaction::CallArg,
 };
 use tower_http::cors::{Any, CorsLayer};
 
@@ -22,14 +29,23 @@ use crate::{
         error::ApiError,
         responses::{AddTxRequest, AddTxResponse, TransactionResponse},
     },
-    db::{queries, schema::transactions::{description, digest}},
+    db::{
+        queries,
+        schema::transactions::{description, digest},
+    },
 };
+
+const NODE_URL: &str = "http://127.0.0.1:9000";
 
 pub fn routes() -> Router<ApiState> {
     Router::new()
         .route("/health", get(health_check))
         .route("/transaction/{tx_digest}", get(get_transaction_by_digest))
         .route("/add_transaction", post(add_transaction))
+        .route(
+            "/derive_auth_signature/{address}",
+            get(derive_auth_signature),
+        )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -83,9 +99,56 @@ async fn add_transaction(
         .get_connection()
         .map_err(|err| ApiError::Database(err))?;
 
-    queries::insert_transaction(&mut conn, &tx_data, payload.description, now).map_err(|err| ApiError::Database(err))?;
+    queries::insert_transaction(&mut conn, &tx_data, payload.description, now)
+        .map_err(|err| ApiError::Database(err))?;
     Ok(Json(AddTxResponse {
         digest: tx_digest.to_string(),
         added_at: now,
     }))
+}
+
+// Only temporary implementation for testing purposes
+async fn derive_auth_signature(
+    State(state): State<ApiState>,
+    Path(address): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let addr = IotaAddress::from_str(&address)
+        .map_err(|_| ApiError::BadRequest("Invalid IOTA address".to_string()))?;
+
+    let iota_client = IotaClientBuilder::default()
+        .build(NODE_URL)
+        .await
+        .map_err(|err| ApiError::Internal(anyhow::anyhow!(err)))?;
+
+    let resp = iota_client
+        .read_api()
+        .get_object_with_options(addr.into(), IotaObjectDataOptions::new().with_owner())
+        .await
+        .map_err(|err| ApiError::Internal(anyhow::anyhow!(err)))?;
+
+    let initial_shared_version = match resp.data.unwrap().owner {
+        Some(Shared {
+            initial_shared_version,
+            ..
+        }) => initial_shared_version,
+        _ => {
+            return Err(ApiError::BadRequest(
+                "The provided address is not a shared object id".to_string(),
+            ));
+        }
+    };
+
+    let sigs = vec![GenericSignature::MoveAuthenticator(
+        MoveAuthenticator::new_for_testing(
+            vec![],
+            vec![],
+            CallArg::Object(iota_types::transaction::ObjectArg::SharedObject {
+                id: addr.into(),
+                initial_shared_version: initial_shared_version,
+                mutable: false,
+            }),
+        ),
+    )];
+
+    Ok(Json(serde_json::json!({ "signature": sigs })))
 }

@@ -2,15 +2,17 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use diesel::{
-    AggregateExpressionMethods, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl,
-    SelectableHelper, SqliteConnection, TextExpressionMethods, dsl, insert_into, update,
+    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SqliteConnection,
+    dsl, insert_into, update,
 };
 use iota_types::base_types::IotaAddress;
 
-use crate::db::schema::members;
-use crate::db::schema::approvals;
-use crate::db::schema::transactions;
 use crate::db::models;
+use crate::db::models::TransactionSummary;
+use crate::db::schema::approvals;
+use crate::db::schema::members;
+use crate::db::schema::transactions;
+use crate::db::schema::accounts;
 
 pub fn insert_new_account_entry(
     conn: &mut SqliteConnection,
@@ -68,11 +70,65 @@ pub fn get_accounts_for_member(
 pub fn get_transactions_for_account(
     conn: &mut SqliteConnection,
     account: &IotaAddress,
-) -> Result<Vec<models::StoredTransaction>> {
-    let results = transactions::table
-        .filter(transactions::account_address.eq(account.to_string()))
-        .load::<models::StoredTransaction>(conn)?;
-    Ok(results)
+) -> Result<Vec<TransactionSummary>> {
+    // Use a transaction to ensure atomic reads across multiple tables
+    conn.transaction(|conn| {
+        let account_str = account.to_string();
+
+        // 1. Get account threshold
+        let threshold: i32 = accounts::table
+            .filter(accounts::account_address.eq(&account_str))
+            .select(accounts::threshold)
+            .first::<i32>(conn)?;
+
+        // 2. Get total weight of all members for this account
+        let total_weight: i64 = members::table
+            .filter(members::account_address.eq(&account_str))
+            .select(dsl::sum(members::weight))
+            .first::<Option<i64>>(conn)?
+            .unwrap_or(0);
+
+        // 3. Get all transactions for this account
+        let stored_transactions = transactions::table
+            .filter(transactions::account_address.eq(&account_str))
+            .load::<models::StoredTransaction>(conn)?;
+
+        // 4. For each transaction, get its approvals and build the summary
+        let mut summaries = Vec::new();
+        for tx in stored_transactions {
+            // Get approver addresses for this transaction
+            let approved_by: Vec<IotaAddress> = approvals::table
+                .filter(approvals::transaction_digest.eq(&tx.transaction_digest))
+                .filter(approvals::account_address.eq(&account_str))
+                .select(approvals::approver_address)
+                .load::<String>(conn)?
+                .into_iter()
+                .filter_map(|addr| IotaAddress::from_str(&addr).ok())
+                .collect();
+
+            // Get sum of approval weights
+            let current_approvals: i64 = approvals::table
+                .filter(approvals::transaction_digest.eq(&tx.transaction_digest))
+                .filter(approvals::account_address.eq(&account_str))
+                .select(dsl::sum(approvals::approver_weight))
+                .first::<Option<i64>>(conn)?
+                .unwrap_or(0);
+
+            summaries.push(TransactionSummary {
+                transaction_digest: tx.transaction_digest,
+                proposer_address: IotaAddress::from_str(&tx.proposer_address)
+                    .unwrap_or(IotaAddress::ZERO),
+                status: tx.status.into(),
+                current_approvals: current_approvals as u64,
+                threshold: threshold as u64,
+                total_account_weight: total_weight as u64,
+                approved_by,
+                created_at: tx.created_at,
+            });
+        }
+
+        Ok(summaries)
+    })
 }
 
 pub fn update_transaction_status(
@@ -86,8 +142,7 @@ pub fn update_transaction_status(
         .optional()?;
 
     if let Some(_) = existing_tx {
-        update(transactions::table
-            .filter(transactions::transaction_digest.eq(tx_digest)))
+        update(transactions::table.filter(transactions::transaction_digest.eq(tx_digest)))
             .set(transactions::status.eq(status))
             .execute(conn)?;
     } else {

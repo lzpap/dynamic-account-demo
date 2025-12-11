@@ -134,6 +134,7 @@ impl IsafeWorker {
         // But this would be highly inefficient to do for every transaction
         // Instead, we could take a look at the input objects and see if any of them is an account object + the sender is the account
         // TODO: This will not work for now as the checkpoint content doesn't have the authenticator inputs yet...
+        // TODO: save and log executed event in db
         let expexted_type = format!("{}::account::Account", self.config.package_address);
         for input in transaction.input_objects.iter() {
             match  input.struct_tag() {

@@ -3,8 +3,9 @@ use std::fmt::Debug;
 // @generated automatically by Diesel CLI.
 use diesel::{Associations, Identifiable, Insertable, Queryable, Selectable, prelude::AsChangeset};
 use diesel::ExpressionMethods;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::db::schema::{members, transactions, approvals, accounts};
+use iota_types::base_types::IotaAddress;
 
 #[derive(Queryable, Identifiable, Debug, Clone)]
 #[diesel(primary_key(account_address))]
@@ -82,3 +83,15 @@ pub struct StoredApproval {
     pub approved_at: i64,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionSummary {
+    pub transaction_digest: String,
+    pub proposer_address: IotaAddress,
+    pub status: String,
+    pub current_approvals: u64,
+    pub threshold: u64,
+    pub total_account_weight: u64,
+    pub approved_by: Vec<IotaAddress>,
+    pub created_at: i64,
+}

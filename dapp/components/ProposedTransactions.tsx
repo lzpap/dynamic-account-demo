@@ -1,12 +1,16 @@
 "use client";
 
-import { DbTransaction } from "@/hooks/useGetAccountTransactions";
+import { TransactionSummary } from "@/hooks/useGetAccountTransactions";
 import { shortenAddress } from "@/lib/utils/shortenAddress";
+import { formatTimestamp } from "@/lib/utils/formatTimestamp";
 import { useState } from "react";
 import { ProposeTransactionDialog } from "./dialogs/ProposeTransactionDialog";
+import { ApproveTransactionDialog } from "./dialogs/ApproveTransactionDialog";
+import { useCurrentAccount } from "@iota/dapp-kit";
+import { ApprovalProgressBar } from "./ApprovalProgressBar";
 
 interface ProposedTransactionsProps {
-  transactions: DbTransaction[];
+  transactions: TransactionSummary[];
 }
 
 export default function ProposedTransactions({
@@ -15,6 +19,14 @@ export default function ProposedTransactions({
   const [proposeDialogName, setProposeDialogName] = useState<string | null>(
     null
   );
+  const [approveTxDigestDialog, setApproveTxDigestDialog] = useState<
+    string | null
+  >(null);
+  const currentAccount = useCurrentAccount();
+
+  const handleApprove = (txDigest: string) => {
+    setApproveTxDigestDialog(txDigest);
+  };
 
   return (
     <>
@@ -89,45 +101,108 @@ export default function ProposedTransactions({
           </div>
         ) : (
           <div className="space-y-3">
-            {transactions.map((tx) => (
-              <div
-                key={tx.transaction_digest}
-                className="bg-background rounded-lg border border-foreground/10 p-4 hover:border-foreground/20 transition"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                      <svg
-                        className="w-5 h-5 text-yellow-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+            {transactions.map((tx) => {
+              const hasApproved = currentAccount?.address
+                ? tx.approvedBy.includes(currentAccount.address)
+                : false;
+
+              return (
+                <div
+                  key={tx.transactionDigest}
+                  className="bg-background rounded-lg border border-foreground/10 p-4 hover:border-foreground/20 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                        <svg
+                          className="w-5 h-5 text-yellow-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-mono text-sm text-foreground">
+                          {shortenAddress(tx.transactionDigest)}
+                        </p>
+                        <p className="text-sm text-foreground/60">
+                          Proposed by {shortenAddress(tx.proposerAddress)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-foreground/50">
+                        {formatTimestamp(tx.createdAt)}
+                      </span>
+                      <span className="bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded text-xs font-medium">
+                        {tx.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="mb-3">
+                    <ApprovalProgressBar
+                      currentApprovals={tx.currentApprovals}
+                      threshold={tx.threshold}
+                      totalAccountWeight={tx.totalAccountWeight}
+                    />
+                  </div>
+
+                  {/* Approve Button */}
+                  {currentAccount && !hasApproved && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleApprove(tx.transactionDigest)}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 active:bg-green-800 transition shadow-sm cursor-pointer"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Approve
+                      </button>
                     </div>
-                    <div>
-                      <p className="font-mono text-sm text-foreground">
-                        {shortenAddress(tx.transaction_digest)}
-                      </p>
-                      <p className="text-sm text-foreground/60">
-                        Proposed by {shortenAddress(tx.proposer_address)}
-                      </p>
+                  )}
+                  {currentAccount && hasApproved && (
+                    <div className="flex justify-end">
+                      <span className="flex items-center gap-2 px-3 py-1.5 text-foreground/50 text-sm">
+                        <svg
+                          className="w-4 h-4 text-green-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        You approved
+                      </span>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded text-xs font-medium">
-                      {tx.status}
-                    </span>
-                  </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -136,6 +211,13 @@ export default function ProposedTransactions({
           name={proposeDialogName}
           closeDialog={() => setProposeDialogName(null)}
           onCompleted={() => setProposeDialogName(null)}
+        />
+      )}
+      {approveTxDigestDialog && (
+        <ApproveTransactionDialog
+          transactionDigest={approveTxDigestDialog}
+          closeDialog={() => setApproveTxDigestDialog(null)}
+          onCompleted={() => setApproveTxDigestDialog(null)}
         />
       )}
     </>

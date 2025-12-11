@@ -35,19 +35,22 @@ export function useGetAccountTransactions(accountId: string) {
 
 
 export type getTransctionsForAccount = {
-    transactions: DbTransaction[];
+    transactions: TransactionSummary[];
 } 
 
-export type DbTransaction = {
-    transaction_digest: string;
-    timestampMs: string;
-    proposer_address: string;
+export type TransactionSummary = {
+    transactionDigest: string;
+    proposerAddress: string;
     status: 'Proposed' | 'Approved' | 'Executed' | 'Rejected';
-    creates_at: number;
+    currentApprovals: number;
+    threshold: number;
+    totalAccountWeight: number;
+    approvedBy: string[];
+    createdAt: number;
 }
 
 export type SortedTransactions = {
-    proposed: DbTransaction[];
-    approved: DbTransaction[];
-    executed: DbTransaction[];
+    proposed: TransactionSummary[];
+    approved: TransactionSummary[];
+    executed: TransactionSummary[];
 }

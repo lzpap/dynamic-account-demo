@@ -2,7 +2,7 @@
 
 diesel::table! {
     accounts (account_address) {
-        account_address -> Nullable<Text>,
+        account_address -> Text,
         threshold -> Integer,
         authenticator -> Text,
         created_at -> Int8,
