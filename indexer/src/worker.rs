@@ -17,7 +17,7 @@ use iota_types::{
     transaction::TransactionDataAPI,
 };
 
-use diesel::Connection;
+use diesel::{Connection};
 
 use crate::db::models::Status;
 use crate::db::{pool::DbConnectionPool, queries};
@@ -177,7 +177,10 @@ impl IsafeWorker {
                                 timestamp,
                                 Base64::encode(bcs::to_bytes(&tx_event)?),
                             )?;
-                            info!("Inserted Transaction Executed Event for transaction {}", tx_digest);
+                            info!(
+                                "Inserted Transaction Executed Event for transaction {}",
+                                tx_digest
+                            );
                             Ok(())
                         } else {
                             Ok(()) // Not an Isafe account, skip
@@ -193,14 +196,13 @@ impl IsafeWorker {
     }
 
     fn process_event(&self, event: IsafeEvent, timestamp: u64) -> anyhow::Result<()> {
-        match event {
+        let mut conn = self.pool.get_connection()?;
+        match &event {
             IsafeEvent::AccountCreated(acct_event) => {
                 info!(
                     "Processing AccountCreated event for account: {}",
                     acct_event.account_id
                 );
-                let mut conn = self.pool.get_connection()?;
-
                 // First, insert the account itself
                 let authenticator = format!(
                     "{}::{}::{}",
@@ -215,34 +217,137 @@ impl IsafeWorker {
                         acct_event.threshold,
                         authenticator,
                         timestamp,
-                    )
-                })?;
-                info!(
-                    "Created account {} with threshold {}",
-                    acct_event.account_id, acct_event.threshold
-                );
-
-                // Then insert members
-                for member in acct_event.members {
-                    conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    )?;
+                    info!(
+                        "Created account {} with threshold {}",
+                        acct_event.account_id, acct_event.threshold
+                    );
+                    for member in &acct_event.members {
                         queries::insert_member_entry(
                             conn,
                             acct_event.account_id,
                             member.member_address,
                             member.weight,
                             timestamp,
-                        )
-                    })?;
-                    info!(
-                        "Added member {} with weight {} to account {}",
-                        member.member_address, member.weight, acct_event.account_id
-                    );
-                }
+                        )?;
+                        info!(
+                            "Added member {} with weight {} to account {}",
+                            member.member_address, member.weight, acct_event.account_id
+                        );
+                    }
+                    queries::insert_event_entry(
+                        conn,
+                        acct_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&acct_event)?),
+                    )?;
+                    Ok(())
+                })?;
+            }
+            IsafeEvent::AccountRotated(_acct_event) => {
+                // Handle account rotation event
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    // TODOs:
+                    // remove all existing members and re-insert new members
+                    // update account threshold and authenticator
+                    // update the guardian if applicable
+                    queries::insert_event_entry(
+                        conn,
+                        _acct_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&_acct_event)?),
+                    )
+                })?;
+            }
+            IsafeEvent::MemberAdded(member_added_event) => {
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::insert_member_entry(
+                        conn,
+                        member_added_event.account_id,
+                        member_added_event.member.member_address,
+                        member_added_event.member.weight,
+                        timestamp,
+                    )?;
+                    queries::insert_event_entry(
+                        conn,
+                        member_added_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&member_added_event)?),
+                    )
+                })?;
+                info!(
+                    "Added member {} with weight {} to account {}",
+                    member_added_event.member.member_address, member_added_event.member.weight, member_added_event.account_id
+                );
+            }
+            IsafeEvent::MemberRemoved(member_removed_event) => {
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    // TODO: Remove the member from the account
+                    // TODO: decrease the account's total weight accordingly
+                    // TODO: delete any pending approvals from this member
+                    queries::insert_event_entry(
+                        conn,
+                        member_removed_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&member_removed_event)?),
+                    )
+                })?;
+                info!(
+                    "Removed member {} from account {}",
+                    member_removed_event.member.member_address, member_removed_event.account_id
+                );
+            }
+            IsafeEvent::MemberWeightUpdated(member_updated_event) => {
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    // TODO: Update the member's weight in the account
+                    // TODO : adjust the account's total weight accordingly
+                    // TODO: re-evaluate any pending approvals if necessary
+                    queries::insert_event_entry(
+                        conn,
+                        member_updated_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&member_updated_event)?),
+                    )
+                })?;
+                info!(
+                    "Updated member {} weight to {} in account {}",
+                    member_updated_event.member.member_address, member_updated_event.member.weight, member_updated_event.account_id
+                );
+            }
+            IsafeEvent::ThresholdChanged(th_changed_event) => {
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    // TODO: Update the account's threshold
+                    // TODO: any transaction became approved/lost approval status?
+                    queries::insert_event_entry(
+                        conn,
+                        th_changed_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&th_changed_event)?),
+                    )
+                })?;
+            }
+            IsafeEvent::GuardianChanged(guardian_changed_event) => {
+                // TODO: Update the account's guardian
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::insert_event_entry(
+                        conn,
+                        guardian_changed_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&guardian_changed_event)?),
+                    )
+                })?;
             }
             IsafeEvent::TransactionProposed(tx_event) => {
                 // on-chain type shall always be 32 bytes
                 let tx_digest_bytes: [u8; 32] = tx_event
-                    .transaction_digest
+                    .transaction_digest.clone()
                     .try_into()
                     .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
@@ -250,7 +355,6 @@ impl IsafeWorker {
                     "Processing TransactionProposed event for transaction: {:?}",
                     tx_digest
                 );
-                let mut conn = self.pool.get_connection()?;
                 conn.transaction::<_, anyhow::Error, _>(|conn| {
                     queries::insert_transaction_entry(
                         conn,
@@ -259,6 +363,13 @@ impl IsafeWorker {
                         &tx_event.proposer,
                         Status::Proposed.into(),
                         timestamp,
+                    )?;
+                    queries::insert_event_entry(
+                        conn,
+                        tx_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&tx_event)?),
                     )
                 })?;
                 info!(
@@ -269,7 +380,7 @@ impl IsafeWorker {
             }
             IsafeEvent::TransactionApproved(tx_event) => {
                 let tx_digest_bytes: [u8; 32] = tx_event
-                    .transaction_digest
+                    .transaction_digest.clone()
                     .try_into()
                     .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
@@ -277,7 +388,6 @@ impl IsafeWorker {
                     "Processing TransactionApproved event for transaction: {:?}",
                     tx_digest
                 );
-                let mut conn = self.pool.get_connection()?;
                 conn.transaction::<_, anyhow::Error, _>(|conn| {
                     queries::insert_approval_entry(
                         conn,
@@ -286,6 +396,13 @@ impl IsafeWorker {
                         &tx_event.approver,
                         tx_event.approver_weight,
                         timestamp,
+                    )?;
+                    queries::insert_event_entry(
+                        conn,
+                        tx_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&tx_event)?),
                     )
                 })?;
                 info!(
@@ -296,7 +413,7 @@ impl IsafeWorker {
             }
             IsafeEvent::TransactionApprovalThresholdReached(tx_event) => {
                 let tx_digest_bytes: [u8; 32] = tx_event
-                    .transaction_digest
+                    .transaction_digest.clone()
                     .try_into()
                     .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
@@ -304,12 +421,18 @@ impl IsafeWorker {
                     "Processing TransactionApprovalThresholdReached event for transaction: {:?}",
                     tx_digest
                 );
-                let mut conn = self.pool.get_connection()?;
                 conn.transaction::<_, anyhow::Error, _>(|conn| {
                     queries::update_transaction_status(
                         conn,
                         tx_digest.to_string(),
                         Status::Approved.into(),
+                    )?;
+                    queries::insert_event_entry(
+                        conn,
+                        tx_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&tx_event)?),
                     )
                 })?;
                 info!(
@@ -318,7 +441,24 @@ impl IsafeWorker {
                 );
             }
             IsafeEvent::TransactionExecuted(_) => {
+                // this event is injected above in process_transaction() when we detect a transaction has been executed
                 warn!("TransactionExecuted event is never emitted on-chain");
+            }
+            IsafeEvent::TransactionRemoved(tx_removed_event) => {
+                // TODO: remove the transaction from the transactions table?
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::insert_event_entry(
+                        conn,
+                        tx_removed_event.account_id.to_string(),
+                        event.type_().to_string(),
+                        timestamp,
+                        Base64::encode(bcs::to_bytes(&tx_removed_event)?),
+                    )
+                })?;
+                info!(
+                    "Processed TransactionRemoved event for transaction: {:?}",
+                    tx_removed_event.transaction_digest
+                );
             }
         }
         Ok(())

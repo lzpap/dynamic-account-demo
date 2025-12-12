@@ -8,10 +8,17 @@ use crate::config::IsafeIndexerConfig;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) enum IsafeEvent {
     AccountCreated(AccountCreatedEvent),
+    AccountRotated(AccountRotatedEvent),
+    MemberAdded(MemberAddedEvent),
+    MemberRemoved(MemberRemovedEvent),
+    MemberWeightUpdated(MemberWeightUpdatedEvent),
+    ThresholdChanged(ThresholdChangedEvent),
+    GuardianChanged(GuardianChangedEvent),
     TransactionProposed(TransactionProposedEvent),
     TransactionApproved(TransactionApprovedEvent),
     TransactionApprovalThresholdReached(TransactionApprovalThresholdReachedEvent),
     TransactionExecuted(TransactionExecutedEvent),
+    TransactionRemoved(TransactionRemovedEvent),
 }
 
 impl IsafeEvent {
@@ -29,12 +36,35 @@ impl IsafeEvent {
 
         Ok(match event.type_.name.as_str() {
             "AccountCreatedEvent" => Some(Self::AccountCreated(bcs::from_bytes(&event.contents)?)),
+            "AccountRotatedEvent" => Some(Self::AccountRotated(bcs::from_bytes(&event.contents)?)),
+            "MemberAddedEvent" => Some(Self::MemberAdded(bcs::from_bytes(&event.contents)?)),
+            "MemberRemovedEvent" => Some(Self::MemberRemoved(bcs::from_bytes(&event.contents)?)),
+            "MemberWeightUpdatedEvent" => Some(Self::MemberWeightUpdated(bcs::from_bytes(&event.contents)?)),
+            "ThresholdChangedEvent" => Some(Self::ThresholdChanged(bcs::from_bytes(&event.contents)?)),
+            "GuardianChangedEvent" => Some(Self::GuardianChanged(bcs::from_bytes(&event.contents)?)),
             "TransactionProposedEvent" => Some(Self::TransactionProposed(bcs::from_bytes(&event.contents)?)),
             "TransactionApprovedEvent" => Some(Self::TransactionApproved(bcs::from_bytes(&event.contents)?)),
             "TransactionApprovalThresholdReachedEvent" => Some(Self::TransactionApprovalThresholdReached(bcs::from_bytes(&event.contents)?)),
             "TransactionExecutedEvent" => Some(Self::TransactionExecuted(bcs::from_bytes(&event.contents)?)),
+            "TransactionRemovedEvent" => Some(Self::TransactionRemoved(bcs::from_bytes(&event.contents)?)),
             _ => None,
         })
+    }
+    pub fn type_(&self) -> &str {
+        match self {
+            IsafeEvent::AccountCreated(_) => "AccountCreatedEvent",
+            IsafeEvent::AccountRotated(_) => "AccountRotatedEvent",
+            IsafeEvent::MemberAdded(_) => "MemberAddedEvent",
+            IsafeEvent::MemberRemoved(_) => "MemberRemovedEvent",
+            IsafeEvent::MemberWeightUpdated(_) => "MemberWeightUpdatedEvent",
+            IsafeEvent::ThresholdChanged(_) => "ThresholdChangedEvent",
+            IsafeEvent::GuardianChanged(_) => "GuardianChangedEvent",
+            IsafeEvent::TransactionProposed(_) => "TransactionProposedEvent",
+            IsafeEvent::TransactionApproved(_) => "TransactionApprovedEvent",
+            IsafeEvent::TransactionApprovalThresholdReached(_) => "TransactionApprovalThresholdReachedEvent",
+            IsafeEvent::TransactionExecuted(_) => "TransactionExecutedEvent",
+            IsafeEvent::TransactionRemoved(_) => "TransactionRemovedEvent",
+        }
     }
 }
 
@@ -45,6 +75,49 @@ pub struct AccountCreatedEvent {
     pub threshold: u64,
     pub guardian: Vec<u8>,
     pub authenticator: AuthenticatorInfoV1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccountRotatedEvent {
+    pub account_id: IotaAddress,
+    pub members: Vec<Member>,
+    pub threshold: u64,
+    pub guardian: Vec<u8>,
+    pub authenticator: AuthenticatorInfoV1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemberAddedEvent {
+    pub account_id: IotaAddress,
+    pub member: Member,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemberRemovedEvent {
+    pub account_id: IotaAddress,
+    pub member: Member,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemberWeightUpdatedEvent {
+    pub account_id: IotaAddress,
+    pub member: Member,
+    pub old_weight: u64,
+    pub new_weight: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThresholdChangedEvent {
+    pub account_id: IotaAddress,
+    pub old_threshold: u64,
+    pub new_threshold: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GuardianChangedEvent {
+    pub account_id: IotaAddress,
+    pub old_guardian: Vec<u8>,
+    pub new_guardian: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -82,6 +155,12 @@ pub struct TransactionApprovalThresholdReachedEvent{
     pub transaction_digest: Vec<u8>,
     pub total_approved_weight: u64,
     pub threshold: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionRemovedEvent{
+    pub account_id: IotaAddress,
+    pub transaction_digest: Vec<u8>,
 }
 
 // This event doesn't exist on-chain, it's for indexing purposes only
