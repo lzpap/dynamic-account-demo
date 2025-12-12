@@ -5,11 +5,13 @@ use tracing::warn;
 
 use crate::config::IsafeIndexerConfig;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) enum IsafeEvent {
     AccountCreated(AccountCreatedEvent),
     TransactionProposed(TransactionProposedEvent),
     TransactionApproved(TransactionApprovedEvent),
     TransactionApprovalThresholdReached(TransactionApprovalThresholdReachedEvent),
+    TransactionExecuted(TransactionExecutedEvent),
 }
 
 impl IsafeEvent {
@@ -30,6 +32,7 @@ impl IsafeEvent {
             "TransactionProposedEvent" => Some(Self::TransactionProposed(bcs::from_bytes(&event.contents)?)),
             "TransactionApprovedEvent" => Some(Self::TransactionApproved(bcs::from_bytes(&event.contents)?)),
             "TransactionApprovalThresholdReachedEvent" => Some(Self::TransactionApprovalThresholdReached(bcs::from_bytes(&event.contents)?)),
+            "TransactionExecutedEvent" => Some(Self::TransactionExecuted(bcs::from_bytes(&event.contents)?)),
             _ => None,
         })
     }
@@ -78,6 +81,17 @@ pub struct TransactionApprovalThresholdReachedEvent{
     pub account_id: IotaAddress,
     pub transaction_digest: Vec<u8>,
     pub total_approved_weight: u64,
+    pub threshold: u64,
+}
+
+// This event doesn't exist on-chain, it's for indexing purposes only
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionExecutedEvent{
+    pub account_id: IotaAddress,
+    pub transaction_digest: TransactionDigest,
+    pub total_member_weight: u64,
+    pub approvers: Vec<IotaAddress>,
+    pub approver_weights: Vec<u64>,
     pub threshold: u64,
 }
 

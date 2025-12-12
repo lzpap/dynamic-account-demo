@@ -1,4 +1,4 @@
-use axum::extract::FromRef;
+use fastcrypto::encoding::{Base64, Encoding};
 use futures::FutureExt;
 use std::{panic::AssertUnwindSafe, path::PathBuf, sync::Arc};
 
@@ -9,14 +9,19 @@ use iota_data_ingestion_core::{
 use iota_json_rpc_types::{IotaObjectDataOptions, IotaTransactionBlockResponseOptions};
 use iota_sdk::IotaClientBuilder;
 use iota_types::{
-    base_types::ObjectID, digests::TransactionDigest, effects::{TransactionEffects, TransactionEffectsAPI}, execution_status::ExecutionStatus, full_checkpoint_content::{CheckpointData, CheckpointTransaction}
+    base_types::ObjectID,
+    digests::TransactionDigest,
+    effects::{TransactionEffects, TransactionEffectsAPI},
+    execution_status::ExecutionStatus,
+    full_checkpoint_content::{CheckpointData, CheckpointTransaction},
+    transaction::TransactionDataAPI,
 };
 
 use diesel::Connection;
 
+use crate::db::models::Status;
 use crate::db::{pool::DbConnectionPool, queries};
 use crate::{config::IsafeIndexerConfig, events::IsafeEvent};
-use crate::db::models::Status;
 use anyhow::{Result, anyhow, bail};
 use async_trait::async_trait;
 use prometheus::Registry;
@@ -123,38 +128,66 @@ impl IsafeWorker {
                     }
                 }
             }
-            self.process_transaction(transaction)?;
+            self.process_transaction(transaction, timestamp)?;
         }
 
         Ok(())
     }
 
-    fn process_transaction(&self, transaction: &CheckpointTransaction) -> anyhow::Result<()> {
-        // We could exract the sender and look into our DB to see if there exists an account with that id
-        // But this would be highly inefficient to do for every transaction
-        // Instead, we could take a look at the input objects and see if any of them is an account object + the sender is the account
-        // TODO: This will not work for now as the checkpoint content doesn't have the authenticator inputs yet...
-        // TODO: save and log executed event in db
-        let expexted_type = format!("{}::account::Account", self.config.package_address);
-        for input in transaction.input_objects.iter() {
-            match  input.struct_tag() {
-                Some(tag) if tag.to_canonical_string(true) == expexted_type => {
-                    // If this object id is the sender of the tx, we have a hit
-                    if transaction.transaction.sender_address().to_inner() == input.id().into_bytes() {
-                        let mut conn = self.pool.get_connection()?;
-                        let tx_digest = transaction.transaction.digest().to_string();
-                        conn.transaction::<_, anyhow::Error, _>(|conn| {
-                            queries::update_transaction_status(conn, tx_digest.clone(), Status::Executed.into())
-                        })?;
-                        info!(
-                            "Updated transaction {} status to Executed",
-                            tx_digest
-                        );
-                        break;
-                    }
+    fn process_transaction(
+        &self,
+        tx: &CheckpointTransaction,
+        timestamp: u64,
+    ) -> anyhow::Result<()> {
+        match tx.transaction.sender_move_authenticator() {
+            Some(move_sig) => {
+                let sender = tx.transaction.transaction_data().sender();
+                if sender == move_sig.address()? {
+                    // Is this an Isafe address?
+                    let mut conn = self.pool.get_connection()?;
+                    conn.transaction::<_, anyhow::Error, _>(|conn| {
+                        if queries::account_exists(conn, &sender)? {
+                            let tx_digest = tx.transaction.digest().to_string();
+                            queries::update_transaction_status(
+                                conn,
+                                tx_digest.clone(),
+                                Status::Executed.into(),
+                            )?;
+                            info!("Updated transaction {} status to Executed", tx_digest);
+                            // let's construct the executed event
+                            // Note: TransactionExecuted event is never emitted on-chain
+
+                            let approval_details = queries::get_transaction_approval_details(
+                                conn, &sender, &tx_digest,
+                            )?;
+
+                            let tx_event = crate::events::TransactionExecutedEvent {
+                                account_id: sender,
+                                transaction_digest: tx.transaction.digest().clone(),
+                                total_member_weight: approval_details.total_account_weight,
+                                approvers: approval_details.approvers,
+                                approver_weights: approval_details.approver_weights,
+                                threshold: approval_details.threshold,
+                            };
+
+                            queries::insert_event_entry(
+                                conn,
+                                sender.to_string(),
+                                "TransactionExecuted".to_string(),
+                                timestamp,
+                                Base64::encode(bcs::to_bytes(&tx_event)?),
+                            )?;
+                            info!("Inserted Transaction Executed Event for transaction {}", tx_digest);
+                            Ok(())
+                        } else {
+                            Ok(()) // Not an Isafe account, skip
+                        }
+                    })?;
+                } else {
+                    return Ok(()); // Not a sender address authenticator, skip
                 }
-                _ => {}
             }
+            _ => return Ok(()), // Not a sender address authenticator, skip
         }
         Ok(())
     }
@@ -167,7 +200,7 @@ impl IsafeWorker {
                     acct_event.account_id
                 );
                 let mut conn = self.pool.get_connection()?;
-                
+
                 // First, insert the account itself
                 let authenticator = format!(
                     "{}::{}::{}",
@@ -208,7 +241,10 @@ impl IsafeWorker {
             }
             IsafeEvent::TransactionProposed(tx_event) => {
                 // on-chain type shall always be 32 bytes
-                let tx_digest_bytes: [u8; 32] = tx_event.transaction_digest.try_into().expect("Invalid transaction digest length");
+                let tx_digest_bytes: [u8; 32] = tx_event
+                    .transaction_digest
+                    .try_into()
+                    .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
                 info!(
                     "Processing TransactionProposed event for transaction: {:?}",
@@ -232,7 +268,10 @@ impl IsafeWorker {
                 );
             }
             IsafeEvent::TransactionApproved(tx_event) => {
-                let tx_digest_bytes: [u8; 32] = tx_event.transaction_digest.try_into().expect("Invalid transaction digest length");
+                let tx_digest_bytes: [u8; 32] = tx_event
+                    .transaction_digest
+                    .try_into()
+                    .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
                 info!(
                     "Processing TransactionApproved event for transaction: {:?}",
@@ -256,7 +295,10 @@ impl IsafeWorker {
                 );
             }
             IsafeEvent::TransactionApprovalThresholdReached(tx_event) => {
-                let tx_digest_bytes: [u8; 32] = tx_event.transaction_digest.try_into().expect("Invalid transaction digest length");
+                let tx_digest_bytes: [u8; 32] = tx_event
+                    .transaction_digest
+                    .try_into()
+                    .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
                 info!(
                     "Processing TransactionApprovalThresholdReached event for transaction: {:?}",
@@ -274,6 +316,9 @@ impl IsafeWorker {
                     "Updated transaction {} status to Approved",
                     tx_digest.to_string()
                 );
+            }
+            IsafeEvent::TransactionExecuted(_) => {
+                warn!("TransactionExecuted event is never emitted on-chain");
             }
         }
         Ok(())

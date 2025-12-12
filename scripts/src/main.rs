@@ -52,19 +52,19 @@ async fn main() -> Result<()> {
     // Get the ProgrammableTransaction from data
     let kind = data.kind_mut();
 
-    // If kind is a ProgrammableTransaction, you can add inputs like this:
-    if let iota_types::transaction::TransactionKind::ProgrammableTransaction(pt) = kind {
-        // Add a Shared Object input
-        pt.inputs.push(CallArg::Object(
-            iota_types::transaction::ObjectArg::SharedObject {
-                id: ObjectID::from_str(&std::env::var("ACCOUNT_ADDRESS")?)?,
-                initial_shared_version: SequenceNumber::from_u64(
-                                std::env::var("INIT")?.parse()?,
-                            ),
-                mutable: true,
-            },
-        ));
-    }
+    // // If kind is a ProgrammableTransaction, you can add inputs like this:
+    // if let iota_types::transaction::TransactionKind::ProgrammableTransaction(pt) = kind {
+    //     // Add a Shared Object input
+    //     pt.inputs.push(CallArg::Object(
+    //         iota_types::transaction::ObjectArg::SharedObject {
+    //             id: ObjectID::from_str(&std::env::var("ACCOUNT_ADDRESS")?)?,
+    //             initial_shared_version: SequenceNumber::from_u64(
+    //                             std::env::var("INIT")?.parse()?,
+    //                         ),
+    //             mutable: false,
+    //         },
+    //     ));
+    // }
 
     println!("TX digest as Vec<u8>: {:?}", data.digest().into_inner());
     println!("TX digest base58: {}\n", data.digest().to_string());

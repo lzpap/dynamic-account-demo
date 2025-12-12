@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use diesel::{Associations, Identifiable, Insertable, Queryable, Selectable, prelude::AsChangeset};
 use diesel::ExpressionMethods;
 use serde::{Deserialize, Serialize};
-use crate::db::schema::{members, transactions, approvals, accounts};
+use crate::db::schema::{members, transactions, approvals, accounts, events};
 use iota_types::base_types::IotaAddress;
 
 #[derive(Queryable, Identifiable, Debug, Clone)]
@@ -27,6 +27,16 @@ pub struct StoredMember {
     pub added_at: i64,
 }
 
+#[derive(Queryable, Identifiable, Debug, Clone)]
+#[diesel(table_name = events)]
+pub struct StoredEvent {
+    pub id: i32,
+    pub account_address: String,
+    pub event_type: String,
+    pub timestamp: i64,
+    pub content: String,
+}
+
 #[derive(Queryable, Identifiable, Debug, Clone, Insertable, Selectable, AsChangeset)]
 #[diesel(table_name = transactions)]
 #[diesel(primary_key(transaction_digest, account_address))]
@@ -39,6 +49,13 @@ pub struct StoredTransaction {
     #[diesel(deserialize_as = String)] 
     pub status: Status,
     pub created_at: i64,
+}
+
+pub struct ApprovalDetails {
+    pub total_account_weight: u64,
+    pub approvers: Vec<IotaAddress>,
+    pub approver_weights: Vec<u64>,
+    pub threshold: u64,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]

@@ -39,7 +39,18 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    events (id) {
+        id -> Nullable<Integer>,
+        account_address -> Text,
+        event_type -> Text,
+        timestamp -> Int8,
+        content -> Text,
+    }
+}
+
+diesel::joinable!(events -> accounts (account_address));
 diesel::joinable!(members -> accounts (account_address));
 diesel::joinable!(transactions -> accounts (account_address));
 
-diesel::allow_tables_to_appear_in_same_query!(accounts, approvals, members, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(accounts, approvals, events, members, transactions,);

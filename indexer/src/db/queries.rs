@@ -1,3 +1,4 @@
+use core::time;
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -5,6 +6,7 @@ use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SqliteConnection,
     dsl, insert_into, update,
 };
+use iota_types::account;
 use iota_types::base_types::IotaAddress;
 
 use crate::db::models;
@@ -13,6 +15,17 @@ use crate::db::schema::approvals;
 use crate::db::schema::members;
 use crate::db::schema::transactions;
 use crate::db::schema::accounts;
+
+pub fn account_exists(
+    conn: &mut SqliteConnection,
+    account: &IotaAddress,
+) -> Result<bool> {
+    let count: i64 = accounts::table
+        .filter(accounts::account_address.eq(account.to_string()))
+        .count()
+        .get_result(conn)?;
+    Ok(count > 0)
+}
 
 pub fn insert_new_account_entry(
     conn: &mut SqliteConnection,
@@ -67,6 +80,48 @@ pub fn get_accounts_for_member(
     Ok(accounts)
 }
 
+pub fn get_transaction_approval_details(
+    conn: &mut SqliteConnection,
+    account : &IotaAddress,
+    tx_digest: &str,
+) -> Result<models::ApprovalDetails> {
+    conn.transaction(|conn| {
+        // Get approver addresses and weights in a single query
+        let approver_data: Vec<(String, i32)> = approvals::table
+            .filter(approvals::transaction_digest.eq(tx_digest))
+            .filter(approvals::account_address.eq(account.to_string()))
+            .select((approvals::approver_address, approvals::approver_weight))
+            .load::<(String, i32)>(conn)?;
+
+        let (approvers, approver_weights): (Vec<IotaAddress>, Vec<u64>) = approver_data
+            .into_iter()
+            .filter_map(|(addr, weight)| {
+                IotaAddress::from_str(&addr).ok().map(|a| (a, weight as u64))
+            })
+            .unzip();
+
+        // Get the total account weight
+        let total_account_weight: i64 = members::table
+            .filter(members::account_address.eq(account.to_string()))
+            .select(dsl::sum(members::weight))
+            .first::<Option<i64>>(conn)?
+            .unwrap_or(0);
+
+        // Get account threshold
+        let threshold: i32 = accounts::table
+            .filter(accounts::account_address.eq(&account.to_string()))
+            .select(accounts::threshold)
+            .first::<i32>(conn)?;
+
+        Ok(models::ApprovalDetails {
+            total_account_weight: total_account_weight as u64,
+            approvers,
+            approver_weights,
+            threshold: threshold as u64,
+        })
+    })
+}
+
 pub fn get_transactions_for_account(
     conn: &mut SqliteConnection,
     account: &IotaAddress,
@@ -96,23 +151,21 @@ pub fn get_transactions_for_account(
         // 4. For each transaction, get its approvals and build the summary
         let mut summaries = Vec::new();
         for tx in stored_transactions {
-            // Get approver addresses for this transaction
-            let approved_by: Vec<IotaAddress> = approvals::table
+            // Get approver addresses and weights in a single query
+            let approver_data: Vec<(String, i32)> = approvals::table
                 .filter(approvals::transaction_digest.eq(&tx.transaction_digest))
                 .filter(approvals::account_address.eq(&account_str))
-                .select(approvals::approver_address)
-                .load::<String>(conn)?
-                .into_iter()
-                .filter_map(|addr| IotaAddress::from_str(&addr).ok())
-                .collect();
+                .select((approvals::approver_address, approvals::approver_weight))
+                .load::<(String, i32)>(conn)?;
 
-            // Get sum of approval weights
-            let current_approvals: i64 = approvals::table
-                .filter(approvals::transaction_digest.eq(&tx.transaction_digest))
-                .filter(approvals::account_address.eq(&account_str))
-                .select(dsl::sum(approvals::approver_weight))
-                .first::<Option<i64>>(conn)?
-                .unwrap_or(0);
+            let mut approved_by = Vec::new();
+            let mut current_approvals: u64 = 0;
+            for (addr, weight) in approver_data {
+                if let Ok(iota_addr) = IotaAddress::from_str(&addr) {
+                    approved_by.push(iota_addr);
+                    current_approvals += weight as u64;
+                }
+            }
 
             summaries.push(TransactionSummary {
                 transaction_digest: tx.transaction_digest,
@@ -186,6 +239,25 @@ pub fn insert_approval_entry(
             approvals::approver_address.eq(approver.to_string()),
             approvals::approver_weight.eq(approver_weight as i32),
             approvals::approved_at.eq(at as i64),
+        ))
+        .execute(conn)?;
+    Ok(())
+}
+
+pub fn insert_event_entry(
+    conn: &mut SqliteConnection,
+    account_address: String,
+    event_type: String,
+    timestamp: u64,
+    // base64 encoded event
+    content: String,
+) -> Result<()> {
+    insert_into(crate::db::schema::events::table)
+        .values((
+            crate::db::schema::events::account_address.eq(account_address),
+            crate::db::schema::events::event_type.eq(event_type),
+            crate::db::schema::events::content.eq(content),
+            crate::db::schema::events::timestamp.eq(timestamp as i64),
         ))
         .execute(conn)?;
     Ok(())
