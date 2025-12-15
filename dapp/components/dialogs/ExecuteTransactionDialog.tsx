@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useIotaClient } from "@iota/dapp-kit";
 import { Transaction } from "@iota/iota-sdk/transactions";
 import { fromBase64 } from "@iota/iota-sdk/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ExecuteTransactionDialogProps {
   transactionDigest: string;
@@ -27,6 +28,7 @@ export function ExecuteTransactionDialog({
   const [executionResult, setExecutionResult] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const client = useIotaClient();
+  const queryClient = useQueryClient();
 
   // Fetch transaction bytes on mount
   useEffect(() => {
@@ -125,6 +127,8 @@ export function ExecuteTransactionDialog({
 
       setExecuteSuccess(true);
       setExecutionResult(result.digest);
+      // transactions executed from the account can change its state, so we need to invalidate related queries
+      queryClient.invalidateQueries()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setExecuteError(`Failed to execute transaction: ${message}`);
