@@ -17,7 +17,7 @@ use iota_types::{
     transaction::TransactionDataAPI,
 };
 
-use diesel::{Connection};
+use diesel::Connection;
 
 use crate::db::models::Status;
 use crate::db::{pool::DbConnectionPool, queries};
@@ -109,6 +109,12 @@ impl IsafeWorker {
             "Processing checkpoint: {}",
             checkpoint.checkpoint_summary.sequence_number
         );
+        // events shall have a unique timestamp to signal ordering (per account), therfore we use a mutable timestamp here
+        // which is always incremented by 1 ms after processing each event
+        // note: checkpoint interval is 200-300ms, so we should be safe for ~200 events per account per checkpoint
+        // even if this number is exceeded, 
+        let mut event_timestamp = checkpoint.checkpoint_summary.timestamp_ms;
+
         // TODO: implement the actual processing logic here
         for transaction in &checkpoint.transactions {
             let TransactionEffects::V1(effects) = &transaction.effects;
@@ -119,16 +125,22 @@ impl IsafeWorker {
 
             let timestamp = checkpoint.checkpoint_summary.timestamp_ms;
 
+            self.process_transaction(transaction, timestamp,  &mut event_timestamp)?;
+
             if let Some(events) = &transaction.events {
                 for event in events.data.iter() {
                     match IsafeEvent::try_from_event(event, &self.config) {
-                        Ok(Some(event)) => self.process_event(event, timestamp)?,
+                        Ok(Some(event)) => self.process_event(
+                            event,
+                            timestamp,
+                            &mut event_timestamp,
+                            &transaction.transaction.digest().to_string(),
+                        )?,
                         Err(e) => warn!("parsing event failed: {e}"),
                         _ => {}
                     }
                 }
             }
-            self.process_transaction(transaction, timestamp)?;
         }
 
         Ok(())
@@ -138,6 +150,7 @@ impl IsafeWorker {
         &self,
         tx: &CheckpointTransaction,
         timestamp: u64,
+        event_timestamp: &mut u64,
     ) -> anyhow::Result<()> {
         match tx.transaction.sender_move_authenticator() {
             Some(move_sig) => {
@@ -173,10 +186,13 @@ impl IsafeWorker {
                             queries::insert_event_entry(
                                 conn,
                                 sender.to_string(),
-                                "TransactionExecuted".to_string(),
-                                timestamp,
+                                tx_digest.clone(),
+                                "TransactionExecutedEvent".to_string(),
+                                *event_timestamp,
                                 Base64::encode(bcs::to_bytes(&tx_event)?),
                             )?;
+                            // increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                            *event_timestamp += 1;
                             info!(
                                 "Inserted Transaction Executed Event for transaction {}",
                                 tx_digest
@@ -195,7 +211,13 @@ impl IsafeWorker {
         Ok(())
     }
 
-    fn process_event(&self, event: IsafeEvent, timestamp: u64) -> anyhow::Result<()> {
+    fn process_event(
+        &self,
+        event: IsafeEvent,
+        timestamp: u64,
+        event_timestamp: &mut u64,
+        tx_digest_str: &String,
+    ) -> anyhow::Result<()> {
         let mut conn = self.pool.get_connection()?;
         match &event {
             IsafeEvent::AccountCreated(acct_event) => {
@@ -238,10 +260,13 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         acct_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&acct_event)?),
                     )?;
+                    // Increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                    *event_timestamp += 1;
                     Ok(())
                 })?;
             }
@@ -255,11 +280,14 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         _acct_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&_acct_event)?),
                     )
                 })?;
+                // Increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
             }
             IsafeEvent::MemberAdded(member_added_event) => {
                 conn.transaction::<_, anyhow::Error, _>(|conn| {
@@ -273,14 +301,19 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         member_added_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&member_added_event)?),
                     )
                 })?;
+                // Increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
                 info!(
                     "Added member {} with weight {} to account {}",
-                    member_added_event.member.member_address, member_added_event.member.weight, member_added_event.account_id
+                    member_added_event.member.member_address,
+                    member_added_event.member.weight,
+                    member_added_event.account_id
                 );
             }
             IsafeEvent::MemberRemoved(member_removed_event) => {
@@ -291,11 +324,14 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         member_removed_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&member_removed_event)?),
                     )
                 })?;
+                // Increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
                 info!(
                     "Removed member {} from account {}",
                     member_removed_event.member.member_address, member_removed_event.account_id
@@ -309,14 +345,19 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         member_updated_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&member_updated_event)?),
                     )
                 })?;
+                // Increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
                 info!(
                     "Updated member {} weight to {} in account {}",
-                    member_updated_event.member.member_address, member_updated_event.member.weight, member_updated_event.account_id
+                    member_updated_event.member.member_address,
+                    member_updated_event.member.weight,
+                    member_updated_event.account_id
                 );
             }
             IsafeEvent::ThresholdChanged(th_changed_event) => {
@@ -326,11 +367,14 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         th_changed_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&th_changed_event)?),
                     )
                 })?;
+                // Increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
             }
             IsafeEvent::GuardianChanged(guardian_changed_event) => {
                 // TODO: Update the account's guardian
@@ -338,16 +382,20 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         guardian_changed_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&guardian_changed_event)?),
                     )
                 })?;
+                // Increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
             }
             IsafeEvent::TransactionProposed(tx_event) => {
                 // on-chain type shall always be 32 bytes
                 let tx_digest_bytes: [u8; 32] = tx_event
-                    .transaction_digest.clone()
+                    .transaction_digest
+                    .clone()
                     .try_into()
                     .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
@@ -367,11 +415,14 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         tx_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&tx_event)?),
                     )
                 })?;
+                // increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
                 info!(
                     "Inserted proposed transaction {} for account {}",
                     tx_digest.to_string(),
@@ -380,7 +431,8 @@ impl IsafeWorker {
             }
             IsafeEvent::TransactionApproved(tx_event) => {
                 let tx_digest_bytes: [u8; 32] = tx_event
-                    .transaction_digest.clone()
+                    .transaction_digest
+                    .clone()
                     .try_into()
                     .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
@@ -400,11 +452,14 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         tx_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&tx_event)?),
                     )
                 })?;
+                // increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
                 info!(
                     "Inserted approval for transaction {} by approver {}",
                     tx_digest.to_string(),
@@ -413,7 +468,8 @@ impl IsafeWorker {
             }
             IsafeEvent::TransactionApprovalThresholdReached(tx_event) => {
                 let tx_digest_bytes: [u8; 32] = tx_event
-                    .transaction_digest.clone()
+                    .transaction_digest
+                    .clone()
                     .try_into()
                     .expect("Invalid transaction digest length");
                 let tx_digest = TransactionDigest::from(tx_digest_bytes);
@@ -430,11 +486,14 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         tx_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&tx_event)?),
                     )
                 })?;
+                // increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
                 info!(
                     "Updated transaction {} status to Approved",
                     tx_digest.to_string()
@@ -450,11 +509,14 @@ impl IsafeWorker {
                     queries::insert_event_entry(
                         conn,
                         tx_removed_event.account_id.to_string(),
+                        tx_digest_str.clone(),
                         event.type_().to_string(),
-                        timestamp,
+                        *event_timestamp,
                         Base64::encode(bcs::to_bytes(&tx_removed_event)?),
                     )
                 })?;
+                // increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
                 info!(
                     "Processed TransactionRemoved event for transaction: {:?}",
                     tx_removed_event.transaction_digest

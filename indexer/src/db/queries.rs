@@ -1,4 +1,3 @@
-use core::time;
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -6,7 +5,6 @@ use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SqliteConnection,
     dsl, insert_into, update,
 };
-use iota_types::account;
 use iota_types::base_types::IotaAddress;
 
 use crate::db::models;
@@ -15,6 +13,7 @@ use crate::db::schema::approvals;
 use crate::db::schema::members;
 use crate::db::schema::transactions;
 use crate::db::schema::accounts;
+use crate::db::schema::events;
 
 pub fn account_exists(
     conn: &mut SqliteConnection,
@@ -34,12 +33,12 @@ pub fn insert_new_account_entry(
     authenticator: String,
     at: u64,
 ) -> Result<()> {
-    insert_into(crate::db::schema::accounts::table)
+    insert_into(accounts::table)
         .values((
-            crate::db::schema::accounts::account_address.eq(account.to_string()),
-            crate::db::schema::accounts::threshold.eq(threshold as i32),
-            crate::db::schema::accounts::authenticator.eq(authenticator),
-            crate::db::schema::accounts::created_at.eq(at as i64),
+            accounts::account_address.eq(account.to_string()),
+            accounts::threshold.eq(threshold as i32),
+            accounts::authenticator.eq(authenticator),
+            accounts::created_at.eq(at as i64),
         ))
         .execute(conn)?;
     Ok(())
@@ -247,6 +246,7 @@ pub fn insert_approval_entry(
 pub fn insert_event_entry(
     conn: &mut SqliteConnection,
     account_address: String,
+    firing_tx_digest: String,
     event_type: String,
     timestamp: u64,
     // base64 encoded event
@@ -254,11 +254,24 @@ pub fn insert_event_entry(
 ) -> Result<()> {
     insert_into(crate::db::schema::events::table)
         .values((
-            crate::db::schema::events::account_address.eq(account_address),
-            crate::db::schema::events::event_type.eq(event_type),
-            crate::db::schema::events::content.eq(content),
-            crate::db::schema::events::timestamp.eq(timestamp as i64),
+            events::account_address.eq(account_address),
+            events::firing_tx_digest.eq(firing_tx_digest),
+            events::event_type.eq(event_type),
+            events::content.eq(content),
+            events::timestamp.eq(timestamp as i64),
         ))
         .execute(conn)?;
     Ok(())
+}
+
+pub fn get_events_for_account(
+    conn: &mut SqliteConnection,
+    account: &IotaAddress,
+) -> Result<Vec<models::StoredEvent>> {
+    let results = events::table
+        .filter(events::account_address.eq(account.to_string()))
+        .order(events::timestamp.desc())
+        .load::<models::StoredEvent>(conn)?;
+
+    Ok(results)
 }

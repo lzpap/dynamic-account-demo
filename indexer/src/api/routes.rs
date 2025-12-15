@@ -3,28 +3,27 @@
 
 use std::str::FromStr;
 
+use crate::{api::responses::GetEventsResponse, db::queries};
 use axum::{
     Router,
     extract::{Path, State},
     routing::get,
 };
-use iota_types::{base_types::IotaAddress};
+use iota_types::base_types::IotaAddress;
 use tower_http::cors::{Any, CorsLayer};
-use crate::db::queries;
 
-use crate::{
-    api::{
-        ApiState,
-        error::ApiError,
-        responses::{GetAccountsResponse, GetTransactionsResponse},
-    },
+use crate::api::{
+    ApiState,
+    error::ApiError,
+    responses::{Event, GetAccountsResponse, GetTransactionsResponse},
 };
 
 pub fn routes() -> Router<ApiState> {
     Router::new()
         .route("/health", get(health_check))
         .route("/accounts/{member_address}", get(get_accounts))
-        .route("/transactions/{account_address}", get(get_transactions)) 
+        .route("/transactions/{account_address}", get(get_transactions))
+        .route("/events/{account_address}", get(get_events))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -44,9 +43,13 @@ async fn get_accounts(
     let address = IotaAddress::from_str(&member_address)
         .map_err(|_| ApiError::BadRequest("Invalid IOTA address".to_string()))?;
 
-    let mut conn = state.pool.get_connection().map_err(|err| ApiError::Database(err))?;
+    let mut conn = state
+        .pool
+        .get_connection()
+        .map_err(|err| ApiError::Database(err))?;
 
-    let accounts = queries::get_accounts_for_member(&mut conn, &address).map_err(|err| ApiError::Database(err))?;
+    let accounts = queries::get_accounts_for_member(&mut conn, &address)
+        .map_err(|err| ApiError::Database(err))?;
 
     Ok(GetAccountsResponse { accounts })
 }
@@ -57,11 +60,41 @@ async fn get_transactions(
 ) -> Result<GetTransactionsResponse, ApiError> {
     let address = IotaAddress::from_str(&account_address)
         .map_err(|_| ApiError::BadRequest("Invalid account address".to_string()))?;
-    let mut conn = state.pool.get_connection().map_err(|err| ApiError::Database(err))?;
+    let mut conn = state
+        .pool
+        .get_connection()
+        .map_err(|err| ApiError::Database(err))?;
 
     let transactions = queries::get_transactions_for_account(&mut conn, &address)
         .map_err(|err| ApiError::Database(err))?;
 
-
     Ok(GetTransactionsResponse { transactions })
+}
+
+async fn get_events(
+    State(state): State<ApiState>,
+    Path(account_address): Path<String>,
+) -> Result<GetEventsResponse, ApiError> {
+    let address = IotaAddress::from_str(&account_address)
+        .map_err(|_| ApiError::BadRequest("Invalid account address".to_string()))?;
+    let mut conn = state
+        .pool
+        .get_connection()
+        .map_err(|err| ApiError::Database(err))?;
+
+    let events = queries::get_events_for_account(&mut conn, &address)
+        .map_err(|err| ApiError::Database(err))?;
+
+    Ok(GetEventsResponse {
+        events: events
+            .into_iter()
+            .map(|e| Event {
+                account_address: IotaAddress::from_str(&e.account_address).unwrap_or_default(),
+                firing_tx_digest: e.firing_tx_digest,
+                event_type: e.event_type,
+                event_data: e.content,
+                timestamp: e.timestamp as u64,
+            })
+            .collect(),
+    })
 }

@@ -86,7 +86,7 @@ export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
         <Transactions accountAddress={isafeAccount} />
         
         {/* Account History */}
-        <AccountHistory />
+        <AccountHistory accountAddress={isafeAccount} />
       </div>
     </div>
   );

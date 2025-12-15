@@ -43,6 +43,7 @@ diesel::table! {
     events (id) {
         id -> Nullable<Integer>,
         account_address -> Text,
+        firing_tx_digest -> Text,
         event_type -> Text,
         timestamp -> Int8,
         content -> Text,

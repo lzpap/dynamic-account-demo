@@ -27,11 +27,13 @@ pub struct StoredMember {
     pub added_at: i64,
 }
 
-#[derive(Queryable, Identifiable, Debug, Clone)]
+#[derive(Queryable, Identifiable, Debug, Clone, Insertable, Selectable, AsChangeset)]
 #[diesel(table_name = events)]
+#[derive(Serialize)]
 pub struct StoredEvent {
-    pub id: i32,
+    pub id: Option<i32>,
     pub account_address: String,
+    pub firing_tx_digest: String,
     pub event_type: String,
     pub timestamp: i64,
     pub content: String,

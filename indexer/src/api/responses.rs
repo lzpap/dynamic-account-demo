@@ -28,3 +28,25 @@ impl axum::response::IntoResponse for GetTransactionsResponse {
         axum::Json(self).into_response()
     }
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Event {
+    pub account_address: IotaAddress,
+    pub firing_tx_digest: String,
+    pub event_type: String,
+    pub event_data: String,
+    pub timestamp: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetEventsResponse {
+    pub events: Vec<Event>,
+}
+
+impl axum::response::IntoResponse for GetEventsResponse {
+    fn into_response(self) -> axum::response::Response {
+        axum::Json(self).into_response()
+    }
+}
