@@ -6,8 +6,9 @@ import { Members } from "./Members";
 import { Threshold } from "./Threshold";
 import { AccountHistory } from "./AccountHistory";
 import { generateAvatar } from "@/lib/utils/generateAvatar";
+import { AccountBalance } from "./AccountBalance";
 
-export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
+export function AccountOverView({ isafeAccount }: { isafeAccount: string }) {
   const avatarUrl = generateAvatar(isafeAccount, 80);
   const [copied, setCopied] = useState(false);
 
@@ -32,9 +33,9 @@ export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
       <div className="bg-gradient-to-br from-foreground/5 to-foreground/10 rounded-xl p-8 shadow-sm">
         <div className="flex items-center gap-4 mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src={avatarUrl} 
-            alt="Account Avatar" 
+          <img
+            src={avatarUrl}
+            alt="Account Avatar"
             className="w-16 h-16 rounded-full shadow-md"
           />
           <p className="font-mono text-xl break-all leading-relaxed">{isafeAccount}</p>
@@ -54,8 +55,11 @@ export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
             )}
           </button>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Balance */}
+          <AccountBalance accountAddress={isafeAccount} />
+
           {/* Members Count */}
           <div className="bg-background/80 backdrop-blur rounded-lg p-5 border border-foreground/10 hover:border-foreground/20 transition-all hover:shadow-md">
             <div className="flex items-center gap-2 mb-3">
@@ -84,7 +88,7 @@ export function AccountOverView({isafeAccount}: {isafeAccount: string}) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Executed Transactions */}
         <Transactions accountAddress={isafeAccount} />
-        
+
         {/* Account History */}
         <AccountHistory accountAddress={isafeAccount} />
       </div>

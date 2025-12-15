@@ -14,4 +14,5 @@ export const queryKey = {
     allowed_authenticators: (account_id: string) => [...queryKey.all, 'allowed-authenticators', account_id],
     transactions: (account_id: string) => [...queryKey.all, 'transactions', account_id],
     events: (account_id: string) => [...queryKey.all, 'events', account_id],
+    balance: (account_id: string) => [...queryKey.all, 'balance', account_id],
 };
