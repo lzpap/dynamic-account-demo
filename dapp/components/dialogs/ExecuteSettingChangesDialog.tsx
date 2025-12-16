@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { redirect, useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import { SettingsAction } from "@/app/[account]/settings/page";
 import { isValidIotaAddress, toBase64 } from "@iota/iota-sdk/utils";
 import { CONFIG } from "@/config/config";
@@ -32,8 +32,7 @@ export function ExecuteSettingChangesDialog({
   const [success, setSuccess] = useState(false);
   const [proposedTxDigest, setProposedTxDigest] = useState<string | null>(null);
   const iotaClient = useIotaClient();
-  const { mutate: signAndExecuteTransaction, isPending } =
-    useSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const queryClient = useQueryClient();
 
   async function prepareSettingsChange(): Promise<Transaction> {
@@ -154,10 +153,28 @@ export function ExecuteSettingChangesDialog({
     signAndExecuteTransaction(
       { transaction: proposingTx, waitForTransaction: true },
       {
-        onSuccess: async (result) => {
+        onSuccess: async () => {
+          let description = "";
+          switch (action.type) {
+            case "add_member":
+              description = `Propose to add member ${action.address} with weight ${action.weight}`;
+              break;
+            case "remove_member":
+              description = `Propose to remove member ${action.address}`;
+              break;
+            case "update_weight":
+              description = `Propose to update weight of member ${action.address} to ${action.newWeight}`;
+              break;
+            case "set_threshold":
+              description = `Propose to set new threshold to ${action.newThreshold}`;
+              break;
+            default:
+              // no additional action needed for now
+              break;
+          }
           const uploadTxResult = await uploadTx(
             toBase64(toBeProposedTxBytes),
-            `Proposed transaction for action: ${action.type}`
+            description
           );
           if (uploadTxResult.error) {
             throw new Error(
@@ -178,6 +195,7 @@ export function ExecuteSettingChangesDialog({
     return toBeProposedTxDigest;
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let cancelled = false;
     async function runSteps() {
@@ -212,18 +230,36 @@ export function ExecuteSettingChangesDialog({
     "Couldn't carry out settings change",
   ];
 
+  const stepIcons = [
+    <svg key="prepare" className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
+    <svg key="gas" className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path d="M12 8v4l3 3" strokeWidth="2" /></svg>,
+    <svg key="propose" className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" strokeWidth="2" /><path d="M8 12h8" strokeWidth="2" /></svg>,
+    <svg key="success" className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+    <svg key="fail" className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-gradient-to-br from-black/60 to-blue-900/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-background border border-foreground/20 rounded-xl shadow-2xl w-full max-w-md mx-4">
+      <div className="relative bg-background border border-foreground/20 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-fade-in">
         <div className="flex items-center justify-between p-6 border-b border-foreground/10">
-          <h2 className="text-xl font-semibold">Execute Setting Changes</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            Execute Setting Changes
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-foreground/10 rounded-full transition"
+            aria-label="Close dialog"
+          >
+            <svg className="w-6 h-6 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
-        <div className="p-6 space-y-6">
-          <ol className="space-y-3">
+        <div className="p-8 space-y-8">
+          <ol className="space-y-4">
             {steps
               .slice(0, success ? 4 : error ? 5 : step)
               .map((label, idx) => (
@@ -231,54 +267,54 @@ export function ExecuteSettingChangesDialog({
                   key={label}
                   className={
                     idx + 1 < step
-                      ? "text-green-600"
+                      ? "opacity-60"
                       : idx + 1 === step
                       ? "font-semibold text-blue-600"
-                      : "text-foreground/60"
+                      : "text-foreground/70"
                   }
                 >
-                  {label}
-                  {idx + 1 === step && !error && !success && (
-                    <span className="ml-2 animate-spin inline-block align-middle">
-                      <svg
-                        className="w-4 h-4 text-blue-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={[
+                        idx + 1 < step
+                          ? "bg-green-100 text-green-600"
+                          : idx + 1 === step
+                          ? "bg-blue-100 text-blue-600 animate-pulse"
+                          : "bg-foreground/10 text-foreground/60",
+                        "rounded-full p-2 flex items-center justify-center transition-all"
+                      ].join(" ")}
+                    >
+                      {stepIcons[idx]}
                     </span>
-                  )}
+                    <span className="text-base">{label}</span>
+                    {idx + 1 === step && !error && !success && (
+                      <span className="ml-2 animate-spin inline-block align-middle">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </span>
+                    )}
+                  </div>
                 </li>
               ))}
           </ol>
 
           {success && proposedTxDigest && (
-            <div className="mt-6 flex flex-col items-center gap-3">
-              <span className="text-green-600 font-semibold">
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <span className="text-green-600 text-lg font-semibold flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 Proposed setting change successfully with digest {proposedTxDigest}!
               </span>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                  className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium shadow hover:bg-blue-700 transition"
                   onClick={() => redirect(`/${accountAddress}/transactions`)}
                 >
                   Go to Proposed Transactions
                 </button>
                 <button
-                  className="px-4 py-2 bg-foreground/10 text-foreground rounded hover:bg-foreground/20 transition"
+                  className="px-5 py-2 bg-foreground/10 text-foreground rounded-lg font-medium hover:bg-foreground/20 transition"
                   onClick={onClose}
                 >
                   Close
@@ -287,7 +323,8 @@ export function ExecuteSettingChangesDialog({
             </div>
           )}
           {error && (
-            <div className="mt-6 text-red-600 font-semibold">
+            <div className="mt-8 text-red-600 text-lg font-semibold flex items-center gap-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               Ooops, something went wrong: {error}
             </div>
           )}
