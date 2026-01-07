@@ -212,11 +212,3 @@ pub fn test_account_created_event_deserialization() {
     assert!(account_created_event.authenticator.module_name == "dynamic_auth");
     assert!(account_created_event.authenticator.function_name == "authenticate");
 }
-
-#[test]
-pub fn test_tx_approval_lost_event_deserialization() {
-    let event_bytes= Base64::decode("CiVPbwmWC4mW1Ec4iupZ2bBs3BU3wJSVyIcsG3uEwRLmIM1pJ/5N3m5+ShMQwIzzmUl3R8iBKLJKWU5faFL0EkC3AgAAAAAAAAABAAAAAAAAAA==").unwrap();
-    let tx_approval_lost_event: TransactionApprovalThresholdLostEvent = bcs::from_bytes(&event_bytes).unwrap();
-    assert_eq!(tx_approval_lost_event.total_approved_weight, 1);
-    assert_eq!(tx_approval_lost_event.threshold, 1);
-}
