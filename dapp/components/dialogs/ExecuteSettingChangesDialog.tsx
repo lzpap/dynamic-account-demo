@@ -115,6 +115,7 @@ export function ExecuteSettingChangesDialog({
   async function selectGas(tx: Transaction): Promise<Transaction> {
     let gasBalance = 0;
     const coinResponse = await iotaClient.getCoins({ owner: accountAddress });
+    // TODO: select gas coins that are not already used for proposed transactions. Warn the user if there are no others!
     let i = 0;
     const payments: ObjectRef[] = [];
     while (gasBalance < GAS_BUDGET && i < coinResponse.data.length) {

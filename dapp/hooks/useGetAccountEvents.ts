@@ -13,6 +13,7 @@ import {
   TransactionExecutedEvent,
   TransactionProposedEvent,
   TransactionRemovedEvent,
+  TransactionApprovalThresholdLostEvent,
 } from "@/lib/bcs/events";
 import { fromBase64 } from "@iota/iota-sdk/utils";
 
@@ -62,6 +63,11 @@ export function useGetAccountEvents(address: string) {
             break;
           case "TransactionApprovalThresholdReachedEvent":
             parsedEvent = TransactionApprovalThresholdReachedEvent.parse(
+              fromBase64(event.eventData)
+            );
+            break;
+          case "TransactionApprovalThresholdLostEvent":
+            parsedEvent = TransactionApprovalThresholdLostEvent.parse(
               fromBase64(event.eventData)
             );
             break;
@@ -131,6 +137,7 @@ export type ParsedEvent = {
     | typeof ThresholdChangedEvent.$inferType
     | typeof GuardianChangedEvent.$inferType
     | typeof TransactionApprovalThresholdReachedEvent.$inferType
+    | typeof TransactionApprovalThresholdLostEvent.$inferType
     | typeof TransactionApprovedEvent.$inferType
     | typeof TransactionExecutedEvent.$inferType
     | typeof TransactionProposedEvent.$inferType

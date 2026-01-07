@@ -16,7 +16,7 @@ export default function TransactionsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("proposed");
 
   // Fetch transactions data here
-  const { data: transactionsData } = useGetAccountTransactions(accountAddress); // TODO: Replace with actual data fetching logic
+  const { data: transactionsData } = useGetAccountTransactions(accountAddress);
 
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count: number }[] = [

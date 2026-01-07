@@ -17,6 +17,7 @@ pub(crate) enum IsafeEvent {
     TransactionProposed(TransactionProposedEvent),
     TransactionApproved(TransactionApprovedEvent),
     TransactionApprovalThresholdReached(TransactionApprovalThresholdReachedEvent),
+    TransactionApprovalThresholdLost(TransactionApprovalThresholdLostEvent),
     TransactionExecuted(TransactionExecutedEvent),
     TransactionRemoved(TransactionRemovedEvent),
 }
@@ -45,6 +46,7 @@ impl IsafeEvent {
             "TransactionProposedEvent" => Some(Self::TransactionProposed(bcs::from_bytes(&event.contents)?)),
             "TransactionApprovedEvent" => Some(Self::TransactionApproved(bcs::from_bytes(&event.contents)?)),
             "TransactionApprovalThresholdReachedEvent" => Some(Self::TransactionApprovalThresholdReached(bcs::from_bytes(&event.contents)?)),
+            "TransactionApprovalThresholdLostEvent" => Some(Self::TransactionApprovalThresholdLost(bcs::from_bytes(&event.contents)?)),
             "TransactionExecutedEvent" => Some(Self::TransactionExecuted(bcs::from_bytes(&event.contents)?)),
             "TransactionRemovedEvent" => Some(Self::TransactionRemoved(bcs::from_bytes(&event.contents)?)),
             _ => None,
@@ -62,6 +64,7 @@ impl IsafeEvent {
             IsafeEvent::TransactionProposed(_) => "TransactionProposedEvent",
             IsafeEvent::TransactionApproved(_) => "TransactionApprovedEvent",
             IsafeEvent::TransactionApprovalThresholdReached(_) => "TransactionApprovalThresholdReachedEvent",
+            IsafeEvent::TransactionApprovalThresholdLost(_) => "TransactionApprovalThresholdLostEvent",
             IsafeEvent::TransactionExecuted(_) => "TransactionExecutedEvent",
             IsafeEvent::TransactionRemoved(_) => "TransactionRemovedEvent",
         }
@@ -158,6 +161,14 @@ pub struct TransactionApprovalThresholdReachedEvent{
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionApprovalThresholdLostEvent{
+    pub account_id: IotaAddress,
+    pub transaction_digest: Vec<u8>,
+    pub total_approved_weight: u64,
+    pub threshold: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionRemovedEvent{
     pub account_id: IotaAddress,
     pub transaction_digest: Vec<u8>,
@@ -167,7 +178,7 @@ pub struct TransactionRemovedEvent{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionExecutedEvent{
     pub account_id: IotaAddress,
-    pub transaction_digest: TransactionDigest,
+    pub transaction_digest: Vec<u8>,
     pub total_member_weight: u64,
     pub approvers: Vec<IotaAddress>,
     pub approver_weights: Vec<u64>,
@@ -200,4 +211,12 @@ pub fn test_account_created_event_deserialization() {
     );
     assert!(account_created_event.authenticator.module_name == "dynamic_auth");
     assert!(account_created_event.authenticator.function_name == "authenticate");
+}
+
+#[test]
+pub fn test_tx_approval_lost_event_deserialization() {
+    let event_bytes= Base64::decode("CiVPbwmWC4mW1Ec4iupZ2bBs3BU3wJSVyIcsG3uEwRLmIM1pJ/5N3m5+ShMQwIzzmUl3R8iBKLJKWU5faFL0EkC3AgAAAAAAAAABAAAAAAAAAA==").unwrap();
+    let tx_approval_lost_event: TransactionApprovalThresholdLostEvent = bcs::from_bytes(&event_bytes).unwrap();
+    assert_eq!(tx_approval_lost_event.total_approved_weight, 1);
+    assert_eq!(tx_approval_lost_event.threshold, 1);
 }

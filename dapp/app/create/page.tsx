@@ -146,9 +146,7 @@ export default function Create() {
     try {
       // Create the transaction
       const tx = new Transaction();
-
-      // TODO: Replace with your actual package ID after publishing
-      const PACKAGE_ID = CONFIG.packageId; // Replace with your deployed package ID
+      const PACKAGE_ID = CONFIG.packageId;
       const PACKAGE_METADATA_ID = CONFIG.packageMetadataId;
 
       // Build the account using setup_account or create_account_builder pattern

@@ -125,7 +125,6 @@ export function ProposeTransactionDialog({
       // Create the transaction
       const tx = new Transaction();
 
-      // TODO: Replace with your actual package ID after publishing
       const PACKAGE_ID = CONFIG.packageId;
 
       const proposingTxDigest = await validationResult.transaction!.getDigest();
@@ -151,8 +150,6 @@ export function ProposeTransactionDialog({
               new Uint8Array(Buffer.from(result.effects, "base64"))
             );
             setProposalSuccess(true);
-
-            // TODO: upload the transaction to the tx-service
             const uploadResult = await uploadTransactionToService();
             if (uploadResult.error) {
               setProposalSuccess(false);

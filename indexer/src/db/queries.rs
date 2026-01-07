@@ -1,24 +1,25 @@
 use std::str::FromStr;
+use std::time;
 
 use anyhow::Result;
 use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SqliteConnection,
-    dsl, insert_into, update,
+    delete, dsl, insert_into, update,
 };
+use fastcrypto::encoding::{Base64, Encoding};
 use iota_types::base_types::IotaAddress;
+use iota_types::digests::TransactionDigest;
 
 use crate::db::models;
+use crate::db::models::Status;
 use crate::db::models::TransactionSummary;
+use crate::db::schema::accounts;
 use crate::db::schema::approvals;
+use crate::db::schema::events;
 use crate::db::schema::members;
 use crate::db::schema::transactions;
-use crate::db::schema::accounts;
-use crate::db::schema::events;
 
-pub fn account_exists(
-    conn: &mut SqliteConnection,
-    account: &IotaAddress,
-) -> Result<bool> {
+pub fn account_exists(conn: &mut SqliteConnection, account: &IotaAddress) -> Result<bool> {
     let count: i64 = accounts::table
         .filter(accounts::account_address.eq(account.to_string()))
         .count()
@@ -62,6 +63,36 @@ pub fn insert_member_entry(
     Ok(())
 }
 
+pub fn update_member_weight(
+    conn: &mut SqliteConnection,
+    account: &IotaAddress,
+    member: &IotaAddress,
+    new_weight: u64,
+) -> Result<()> {
+    update(
+        members::table
+            .filter(members::account_address.eq(account.to_string()))
+            .filter(members::member_address.eq(member.to_string())),
+    )
+    .set(members::weight.eq(new_weight as i32))
+    .execute(conn)?;
+    Ok(())
+}
+
+pub fn delete_member_from_account(
+    conn: &mut SqliteConnection,
+    account: &IotaAddress,
+    member: &IotaAddress,
+) -> Result<()> {
+    delete(
+        members::table
+            .filter(members::account_address.eq(account.to_string()))
+            .filter(members::member_address.eq(member.to_string())),
+    )
+    .execute(conn)?;
+    Ok(())
+}
+
 pub fn get_accounts_for_member(
     conn: &mut SqliteConnection,
     member: &IotaAddress,
@@ -81,7 +112,7 @@ pub fn get_accounts_for_member(
 
 pub fn get_transaction_approval_details(
     conn: &mut SqliteConnection,
-    account : &IotaAddress,
+    account: &IotaAddress,
     tx_digest: &str,
 ) -> Result<models::ApprovalDetails> {
     conn.transaction(|conn| {
@@ -95,7 +126,9 @@ pub fn get_transaction_approval_details(
         let (approvers, approver_weights): (Vec<IotaAddress>, Vec<u64>) = approver_data
             .into_iter()
             .filter_map(|(addr, weight)| {
-                IotaAddress::from_str(&addr).ok().map(|a| (a, weight as u64))
+                IotaAddress::from_str(&addr)
+                    .ok()
+                    .map(|a| (a, weight as u64))
             })
             .unzip();
 
@@ -243,6 +276,132 @@ pub fn insert_approval_entry(
     Ok(())
 }
 
+/// Delete approvals from a member for proposed transactions, as they are no longer valid
+pub fn delete_approvals_for_not_yet_executed_transactions(
+    conn: &mut SqliteConnection,
+    account: &IotaAddress,
+    member: &IotaAddress,
+) -> Result<()> {
+    let account_str = account.to_string();
+    let member_str = member.to_string();
+    let proposed_status = String::from(Status::Proposed);
+    let approved_status = String::from(Status::Approved);
+
+    let not_yet_executed_txs = transactions::table
+        .filter(transactions::account_address.eq(&account_str))
+        .filter(transactions::status.eq_any([proposed_status, approved_status]))
+        .select(transactions::transaction_digest);
+
+    delete(
+        approvals::table
+            .filter(approvals::account_address.eq(&account_str))
+            .filter(approvals::approver_address.eq(member_str))
+            .filter(approvals::transaction_digest.eq_any(not_yet_executed_txs)),
+    )
+    .execute(conn)?;
+    Ok(())
+}
+
+/// Re-evaluate all proposed/approved transactions for an account to see if their status needs to be updated
+/// This is useful when members, their weights or the account threshold change
+///
+pub fn recheck_account_transactions_status(
+    conn: &mut SqliteConnection,
+    account: &IotaAddress,
+    timestamp: &mut u64,
+) -> Result<()> {
+    let account_str = account.to_string();
+    let proposed_status: String = Status::Proposed.into();
+    let approved_status: String = Status::Approved.into();
+    let mut proposed_to_approved_txs: Vec<String> = Vec::new();
+
+    let proposed_tx_digests = transactions::table
+        .filter(transactions::account_address.eq(&account_str))
+        .filter(transactions::status.eq(proposed_status.clone()));
+    for tx in proposed_tx_digests.load::<models::StoredTransaction>(conn)? {
+        let approval_details =
+            get_transaction_approval_details(conn, account, &tx.transaction_digest)?;
+        let approving_weight = approval_details
+            .approver_weights
+            .iter()
+            .fold(0, |acc, &w| acc + w);
+        if approving_weight >= approval_details.threshold {
+            // A proposed transaction is now approved
+            update_transaction_status(
+                conn,
+                tx.transaction_digest.clone(),
+                approved_status.clone(),
+            )?;
+            proposed_to_approved_txs.push(tx.transaction_digest.clone());
+            // Insert an event for this status change (not fired on-chain, just for record-keeping)
+            let th_reached_event_inner = crate::events::TransactionApprovalThresholdReachedEvent {
+                account_id: account.clone(),
+                transaction_digest: TransactionDigest::from_str(&tx.transaction_digest)?
+                    .into_inner()
+                    .into(),
+                total_approved_weight: approving_weight,
+                threshold: approval_details.threshold,
+            };
+            let threshold_reached_event =
+                crate::events::IsafeEvent::TransactionApprovalThresholdReached(
+                    th_reached_event_inner.clone(),
+                );
+            insert_event_entry(
+                conn,
+                account.to_string(),
+                tx.transaction_digest.clone(),
+                threshold_reached_event.type_().to_string(),
+                *timestamp,
+                Base64::encode(bcs::to_bytes(&th_reached_event_inner)?),
+            )?;
+            *timestamp += 1;
+        }
+    }
+
+    let approved_tx_digests = transactions::table
+        .filter(transactions::account_address.eq(&account_str))
+        .filter(transactions::status.eq(approved_status.clone()))
+        // for the ones we just bumped it doesn't make sense to check again
+        .filter(transactions::transaction_digest.ne_all(&proposed_to_approved_txs));
+    for tx in approved_tx_digests.load::<models::StoredTransaction>(conn)? {
+        let approval_details =
+            get_transaction_approval_details(conn, account, &tx.transaction_digest)?;
+        let approving_weight = approval_details
+            .approver_weights
+            .iter()
+            .fold(0, |acc, &w| acc + w);
+        if approving_weight < approval_details.threshold {
+            // An approved transaction has lost its approval
+            update_transaction_status(
+                conn,
+                tx.transaction_digest.clone(),
+                proposed_status.clone(),
+            )?;
+        }
+        let th_lost_event_inner = crate::events::TransactionApprovalThresholdLostEvent {
+            account_id: account.clone(),
+            transaction_digest: TransactionDigest::from_str(&tx.transaction_digest)?
+                .into_inner()
+                .into(),
+            total_approved_weight: approving_weight,
+            threshold: approval_details.threshold,
+        };
+        let threshold_lost_event = crate::events::IsafeEvent::TransactionApprovalThresholdLost(
+            th_lost_event_inner.clone(),
+        );
+        insert_event_entry(
+            conn,
+            account.to_string(),
+            tx.transaction_digest.clone(),
+            threshold_lost_event.type_().to_string(),
+            *timestamp,
+            Base64::encode(bcs::to_bytes(&th_lost_event_inner)?),
+        )?;
+        *timestamp += 1;
+    }
+    Ok(())
+}
+
 pub fn insert_event_entry(
     conn: &mut SqliteConnection,
     account_address: String,
@@ -274,4 +433,15 @@ pub fn get_events_for_account(
         .load::<models::StoredEvent>(conn)?;
 
     Ok(results)
+}
+
+pub fn update_account_threshold(
+    conn: &mut SqliteConnection,
+    account: &IotaAddress,
+    new_threshold: u64,
+) -> Result<()> {
+    update(accounts::table.filter(accounts::account_address.eq(account.to_string())))
+        .set(accounts::threshold.eq(new_threshold as i32))
+        .execute(conn)?;
+    Ok(())
 }

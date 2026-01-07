@@ -8,7 +8,7 @@ edition = "2024" # edition = "legacy" to use legacy (pre-2024) Move
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
-Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "vm-lang/aa-auth/8116-feature-branch" }
+Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "vm-lang/aa-auth/8805-beta-feature-branch" }
 
 # For local dependencies use `local = path`. Path is relative to the package root
 # Local = { local = "../path/to" }

@@ -8,7 +8,6 @@ interface ThresholdProps {
 }
 
 export function Threshold({ accountAddress, compact = false }: ThresholdProps) {
-    // TODO: Fetch threshold data here, for now hardcoding
     // hint: can call the view function threshold() from the iSafe smart contract with the address
     // can call total_weight() similarl
 

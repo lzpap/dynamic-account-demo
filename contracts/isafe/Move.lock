@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "AA2638C4F2547EC726F5ACFB2D4C56F20D5B1D20566B8C965F7BABC3F744F117"
+manifest_digest = "60D05029EF6605CD8ADE6D6FAE9BD764E52F1C805F6AA760046FB4A638F864D3"
 deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 dependencies = [
   { id = "Iota", name = "Iota" },
@@ -10,7 +10,7 @@ dependencies = [
 
 [[move.package]]
 id = "Iota"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "vm-lang/aa-auth/8116-feature-branch", subdir = "crates/iota-framework/packages/iota-framework" }
+source = { git = "https://github.com/iotaledger/iota.git", rev = "vm-lang/aa-auth/8805-beta-feature-branch", subdir = "crates/iota-framework/packages/iota-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -18,9 +18,9 @@ dependencies = [
 
 [[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "vm-lang/aa-auth/8116-feature-branch", subdir = "crates/iota-framework/packages/move-stdlib" }
+source = { git = "https://github.com/iotaledger/iota.git", rev = "vm-lang/aa-auth/8805-beta-feature-branch", subdir = "crates/iota-framework/packages/move-stdlib" }
 
 [move.toolchain-version]
-compiler-version = "1.13.0-alpha"
+compiler-version = "1.14.0-alpha"
 edition = "2024"
 flavor = "iota"

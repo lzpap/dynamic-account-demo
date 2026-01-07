@@ -915,9 +915,9 @@ dependencies = [
 
 [[package]]
 name = "bnum"
-version = "0.11.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
+checksum = "f781dba93de3a5ef6dc5b17c9958b208f6f3f021623b360fb605ea51ce443f10"
 
 [[package]]
 name = "brotli"
@@ -1221,13 +1221,13 @@ checksum = "75984efb6ed102a0d42db99afb6c1948f0380d1d91808d5529916e6c08b49d8d"
 [[package]]
 name = "consensus-config"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "fastcrypto",
  "iota-network-stack",
+ "iota-sdk-types",
  "rand 0.8.5",
  "serde",
- "shared-crypto",
 ]
 
 [[package]]
@@ -1902,7 +1902,7 @@ checksum = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
 [[package]]
 name = "enum-compat-util"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "serde_yaml",
 ]
@@ -3046,7 +3046,7 @@ dependencies = [
 [[package]]
 name = "iota-adapter-latest"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3072,9 +3072,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "iota-common"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
+dependencies = [
+ "anyhow",
+ "fastcrypto",
+ "futures",
+ "iota-metrics",
+ "iota-types",
+ "parking_lot 0.12.5",
+ "prometheus",
+ "rand 0.8.5",
+ "reqwest",
+ "snap",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "iota-config"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anemo",
  "anyhow",
@@ -3138,8 +3157,8 @@ dependencies = [
 
 [[package]]
 name = "iota-enum-compat-util"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "serde_yaml",
 ]
@@ -3147,7 +3166,7 @@ dependencies = [
 [[package]]
 name = "iota-execution"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "iota-adapter-latest",
  "iota-move-natives-latest",
@@ -3164,8 +3183,8 @@ dependencies = [
 
 [[package]]
 name = "iota-genesis-common"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "iota-execution",
  "iota-protocol-config",
@@ -3175,8 +3194,8 @@ dependencies = [
 
 [[package]]
 name = "iota-http"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "bytes",
  "http",
@@ -3195,8 +3214,8 @@ dependencies = [
 
 [[package]]
 name = "iota-json"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3212,8 +3231,8 @@ dependencies = [
 
 [[package]]
 name = "iota-json-rpc-api"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "fastcrypto",
@@ -3232,8 +3251,8 @@ dependencies = [
 
 [[package]]
 name = "iota-json-rpc-types"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3267,19 +3286,19 @@ dependencies = [
 
 [[package]]
 name = "iota-keys"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bip32",
  "fastcrypto",
+ "iota-sdk-types",
  "iota-types",
  "rand 0.8.5",
  "regex",
  "serde",
  "serde_json",
  "serde_with",
- "shared-crypto",
  "signature 1.6.4",
  "slip10_ed25519",
  "tiny-bip39",
@@ -3288,8 +3307,8 @@ dependencies = [
 
 [[package]]
 name = "iota-macros"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "futures",
  "iota-proc-macros",
@@ -3299,8 +3318,8 @@ dependencies = [
 
 [[package]]
 name = "iota-metrics"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anemo",
  "anemo-tower",
@@ -3326,7 +3345,7 @@ dependencies = [
 [[package]]
 name = "iota-move-natives-latest"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "bcs",
  "better_any",
@@ -3348,8 +3367,8 @@ dependencies = [
 
 [[package]]
 name = "iota-names"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3361,8 +3380,8 @@ dependencies = [
 
 [[package]]
 name = "iota-network-stack"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anemo",
  "bcs",
@@ -3391,8 +3410,8 @@ dependencies = [
 
 [[package]]
 name = "iota-open-rpc"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "schemars 0.8.22",
  "serde",
@@ -3402,8 +3421,8 @@ dependencies = [
 
 [[package]]
 name = "iota-open-rpc-macros"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -3415,8 +3434,8 @@ dependencies = [
 
 [[package]]
 name = "iota-package-resolver"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "async-trait",
  "bcs",
@@ -3431,8 +3450,8 @@ dependencies = [
 
 [[package]]
 name = "iota-proc-macros"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "msim-macros",
  "proc-macro2",
@@ -3442,8 +3461,8 @@ dependencies = [
 
 [[package]]
 name = "iota-protocol-config"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "clap",
  "iota-protocol-config-macros",
@@ -3457,8 +3476,8 @@ dependencies = [
 
 [[package]]
 name = "iota-protocol-config-macros"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3467,8 +3486,8 @@ dependencies = [
 
 [[package]]
 name = "iota-rest-api"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "axum",
@@ -3476,7 +3495,7 @@ dependencies = [
  "fastcrypto",
  "iota-network-stack",
  "iota-protocol-config",
- "iota-rust-sdk",
+ "iota-sdk-types",
  "iota-types",
  "itertools 0.13.0",
  "mime",
@@ -3492,26 +3511,6 @@ dependencies = [
  "tap",
  "tokio",
  "url",
-]
-
-[[package]]
-name = "iota-rust-sdk"
-version = "0.0.0"
-source = "git+https://github.com/iotaledger/iota-rust-sdk.git?rev=d7084eaf0564f4e2381b2e8408ee1f7d51468450#d7084eaf0564f4e2381b2e8408ee1f7d51468450"
-dependencies = [
- "base64ct",
- "bcs",
- "blake2",
- "bnum",
- "bs58 0.5.1",
- "hex",
- "roaring",
- "schemars 0.8.22",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_with",
- "winnow 0.6.26",
 ]
 
 [[package]]
@@ -3548,8 +3547,8 @@ dependencies = [
 
 [[package]]
 name = "iota-sdk"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3560,11 +3559,13 @@ dependencies = [
  "futures",
  "futures-core",
  "getset",
+ "iota-common",
  "iota-config",
  "iota-json",
  "iota-json-rpc-api",
  "iota-json-rpc-types",
  "iota-keys",
+ "iota-sdk-types",
  "iota-transaction-builder",
  "iota-types",
  "jsonrpsee",
@@ -3574,16 +3575,40 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "shared-crypto",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
 ]
 
 [[package]]
+name = "iota-sdk-types"
+version = "0.0.1-alpha.1"
+source = "git+https://github.com/iotaledger/iota-rust-sdk.git?rev=05608b7e4a5b96d85f84e1970a517f6f174beb8b#05608b7e4a5b96d85f84e1970a517f6f174beb8b"
+dependencies = [
+ "base64ct",
+ "bcs",
+ "blake2",
+ "bnum",
+ "bs58 0.5.1",
+ "eyre",
+ "hex",
+ "itertools 0.13.0",
+ "paste",
+ "roaring",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "serde_with",
+ "strum 0.27.2",
+ "thiserror 2.0.17",
+ "winnow 0.7.14",
+]
+
+[[package]]
 name = "iota-transaction-builder"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3599,8 +3624,8 @@ dependencies = [
 
 [[package]]
 name = "iota-types"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anemo",
  "anyhow",
@@ -3624,8 +3649,8 @@ dependencies = [
  "iota-macros",
  "iota-network-stack",
  "iota-protocol-config",
- "iota-rust-sdk",
  "iota-sdk 1.1.5",
+ "iota-sdk-types",
  "itertools 0.13.0",
  "lru",
  "move-binary-format",
@@ -3649,7 +3674,6 @@ dependencies = [
  "serde-name",
  "serde_json",
  "serde_with",
- "shared-crypto",
  "signature 1.6.4",
  "starfish-config",
  "static_assertions",
@@ -3665,7 +3689,7 @@ dependencies = [
 [[package]]
 name = "iota-verifier-latest"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "bcs",
  "iota-types",
@@ -4260,7 +4284,7 @@ dependencies = [
 [[package]]
 name = "move-abstract-interpreter"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "move-binary-format",
  "move-bytecode-verifier-meter",
@@ -4269,12 +4293,12 @@ dependencies = [
 [[package]]
 name = "move-abstract-stack"
 version = "0.0.1"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "enum-compat-util",
@@ -4289,12 +4313,12 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4310,7 +4334,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "indexmap 2.12.1",
@@ -4324,7 +4348,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "move-abstract-interpreter",
  "move-abstract-stack",
@@ -4339,7 +4363,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier-meter"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "move-binary-format",
  "move-core-types",
@@ -4349,7 +4373,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4369,7 +4393,7 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4404,7 +4428,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4428,7 +4452,7 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4449,7 +4473,7 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4470,7 +4494,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -4488,7 +4512,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "hex",
@@ -4501,7 +4525,7 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "hex",
  "move-command-line-common",
@@ -4514,7 +4538,7 @@ dependencies = [
 [[package]]
 name = "move-proc-macros"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "quote",
  "syn 2.0.108",
@@ -4523,7 +4547,7 @@ dependencies = [
 [[package]]
 name = "move-stdlib-natives"
 version = "0.1.1"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "hex",
  "move-binary-format",
@@ -4538,7 +4562,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "once_cell",
  "phf",
@@ -4548,7 +4572,7 @@ dependencies = [
 [[package]]
 name = "move-trace-format"
 version = "0.0.1"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "move-binary-format",
  "move-core-types",
@@ -4559,7 +4583,7 @@ dependencies = [
 [[package]]
 name = "move-vm-config"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "move-binary-format",
  "once_cell",
@@ -4568,7 +4592,7 @@ dependencies = [
 [[package]]
 name = "move-vm-profiler"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "move-vm-config",
  "once_cell",
@@ -4578,7 +4602,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "better_any",
  "fail",
@@ -4598,7 +4622,7 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -4612,7 +4636,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "bcs",
  "move-binary-format",
@@ -5615,8 +5639,8 @@ dependencies = [
 
 [[package]]
 name = "prometheus-closure-metric"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "anyhow",
  "prometheus",
@@ -6117,9 +6141,9 @@ checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
 
 [[package]]
 name = "roaring"
-version = "0.10.12"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19e8d2cfa184d94d0726d650a9f4a1be7f9b76ac9fdb954219878dc00c1c1e7b"
+checksum = "8ba9ce64a8f45d7fc86358410bb1a82e8c987504c0d4900e9141d69a9f26c885"
 dependencies = [
  "bytemuck",
  "byteorder",
@@ -6413,7 +6437,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "fastcrypto",
- "iota-sdk 1.13.0-alpha",
+ "iota-sdk 1.14.0-alpha",
  "iota-types",
  "serde_json",
  "tokio",
@@ -6741,18 +6765,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "shared-crypto"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
-dependencies = [
- "bcs",
- "eyre",
- "fastcrypto",
- "serde",
- "serde_repr",
-]
-
-[[package]]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6950,15 +6962,15 @@ dependencies = [
 [[package]]
 name = "starfish-config"
 version = "0.1.0"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "blake3",
  "fastcrypto",
  "iota-network-stack",
+ "iota-sdk-types",
  "rand 0.8.5",
  "rs_merkle",
  "serde",
- "shared-crypto",
 ]
 
 [[package]]
@@ -7056,6 +7068,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "strum"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
+dependencies = [
+ "strum_macros 0.27.2",
+]
+
+[[package]]
 name = "strum_macros"
 version = "0.25.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7078,6 +7099,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
+ "syn 2.0.108",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
  "syn 2.0.108",
 ]
 
@@ -7711,8 +7744,8 @@ dependencies = [
 
 [[package]]
 name = "typed-store-error"
-version = "1.13.0-alpha"
-source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8116-feature-branch#8e8b0c2ee03d907edf708ee636cf36fa2fe01ddf"
+version = "1.14.0-alpha"
+source = "git+https://github.com/iotaledger/iota?branch=vm-lang%2Faa-auth%2F8805-beta-feature-branch#11d3554286c11a04c4e6c1b9bd46df805ce16ef3"
 dependencies = [
  "serde",
  "thiserror 1.0.69",
@@ -8571,15 +8604,6 @@ name = "winnow"
 version = "0.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
-dependencies = [
- "memchr",
-]
-
-[[package]]
-name = "winnow"
-version = "0.6.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e90edd2ac1aa278a5c4599b1d89cf03074b610800f866d4026dc199d7929a28"
 dependencies = [
  "memchr",
 ]

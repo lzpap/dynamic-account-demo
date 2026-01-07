@@ -113,6 +113,16 @@ public struct TransactionRemovedEvent has copy, drop, store {
     transaction_digest: vector<u8>,
 }
 
+// An event emitted when a transaction is executed.
+public struct TransactionExecutedEvent has copy, drop, store {
+    account: address,
+    transaction_digest: vector<u8>,
+    total_member_weight: u64,
+    approvers: vector<address>,
+    approver_weights: vector<u64>,
+    threshold: u64,
+}
+
 // ---------------------------------- App Key ----------------------------------
 
 public struct AppKey has drop, store {}
@@ -292,6 +302,23 @@ public fun authenticate(self: &Account, _: &AuthContext, ctx: &TxContext) {
         total_approves(self,*ctx.digest()) >= threshold(self),
         ETransactionDoesNotHaveSufficientApprovals,
     );
+
+    let approvers = transactions(self).borrow(*ctx.digest()).approves();
+    let mut approver_weights: vector<u64> = vector::empty();
+
+    approvers.do_ref!(|addr| {
+        let member = members(self).borrow(*addr);
+        approver_weights.push_back(member.weight());
+    });
+
+    emit(TransactionExecutedEvent {
+        account: self.get_address(),
+        transaction_digest: *ctx.digest(),
+        total_member_weight: total_member_weight(self),
+        approvers: *transactions(self).borrow(*ctx.digest()).approves(),  
+        approver_weights: approver_weights,
+        threshold: threshold(self),
+    });
 }
 
 // --------------------------------------- Transactions Management ---------------------------------------

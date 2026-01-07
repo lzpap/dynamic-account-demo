@@ -84,9 +84,16 @@ export const TransactionApprovalThresholdReachedEvent = bcs.struct("TransactionA
   threshold: bcs.u64(),
 });
 
+export const TransactionApprovalThresholdLostEvent = bcs.struct("TransactionApprovalThresholdLostEvent", {
+  account: bcs.Address,
+  transactionDigest: bcs.vector(bcs.u8()),
+  totalApprovingWeight: bcs.u64(),
+  threshold: bcs.u64(),
+});
+
 export const TransactionExecutedEvent = bcs.struct("TransactionExecutedEvent", {
   account: bcs.Address,
-  transactionDigest: bcs.ObjectDigest,
+  transactionDigest: bcs.vector(bcs.u8()),
   totalMemberWeight: bcs.u64(),
   approvers: bcs.vector(bcs.Address),
   approverWeights: bcs.vector(bcs.u64()),

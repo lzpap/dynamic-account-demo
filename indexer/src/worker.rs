@@ -1,6 +1,6 @@
 use fastcrypto::encoding::{Base64, Encoding};
 use futures::FutureExt;
-use std::{panic::AssertUnwindSafe, path::PathBuf, sync::Arc};
+use std::{ panic::AssertUnwindSafe, path::PathBuf, sync::Arc};
 
 use iota_data_ingestion_core::{
     DataIngestionMetrics, FileProgressStore, IndexerExecutor, ReaderOptions, Worker, WorkerPool,
@@ -13,8 +13,7 @@ use iota_types::{
     digests::TransactionDigest,
     effects::{TransactionEffects, TransactionEffectsAPI},
     execution_status::ExecutionStatus,
-    full_checkpoint_content::{CheckpointData, CheckpointTransaction},
-    transaction::TransactionDataAPI,
+    full_checkpoint_content::{CheckpointData},
 };
 
 use diesel::Connection;
@@ -112,10 +111,9 @@ impl IsafeWorker {
         // events shall have a unique timestamp to signal ordering (per account), therfore we use a mutable timestamp here
         // which is always incremented by 1 ms after processing each event
         // note: checkpoint interval is 200-300ms, so we should be safe for ~200 events per account per checkpoint
-        // even if this number is exceeded, 
+        // even if this number is exceeded,
         let mut event_timestamp = checkpoint.checkpoint_summary.timestamp_ms;
 
-        // TODO: implement the actual processing logic here
         for transaction in &checkpoint.transactions {
             let TransactionEffects::V1(effects) = &transaction.effects;
 
@@ -124,8 +122,6 @@ impl IsafeWorker {
             }
 
             let timestamp = checkpoint.checkpoint_summary.timestamp_ms;
-
-            self.process_transaction(transaction, timestamp,  &mut event_timestamp)?;
 
             if let Some(events) = &transaction.events {
                 for event in events.data.iter() {
@@ -143,71 +139,6 @@ impl IsafeWorker {
             }
         }
 
-        Ok(())
-    }
-
-    fn process_transaction(
-        &self,
-        tx: &CheckpointTransaction,
-        timestamp: u64,
-        event_timestamp: &mut u64,
-    ) -> anyhow::Result<()> {
-        match tx.transaction.sender_move_authenticator() {
-            Some(move_sig) => {
-                let sender = tx.transaction.transaction_data().sender();
-                if sender == move_sig.address()? {
-                    // Is this an Isafe address?
-                    let mut conn = self.pool.get_connection()?;
-                    conn.transaction::<_, anyhow::Error, _>(|conn| {
-                        if queries::account_exists(conn, &sender)? {
-                            let tx_digest = tx.transaction.digest().to_string();
-                            queries::update_transaction_status(
-                                conn,
-                                tx_digest.clone(),
-                                Status::Executed.into(),
-                            )?;
-                            info!("Updated transaction {} status to Executed", tx_digest);
-                            // let's construct the executed event
-                            // Note: TransactionExecuted event is never emitted on-chain
-
-                            let approval_details = queries::get_transaction_approval_details(
-                                conn, &sender, &tx_digest,
-                            )?;
-
-                            let tx_event = crate::events::TransactionExecutedEvent {
-                                account_id: sender,
-                                transaction_digest: tx.transaction.digest().clone(),
-                                total_member_weight: approval_details.total_account_weight,
-                                approvers: approval_details.approvers,
-                                approver_weights: approval_details.approver_weights,
-                                threshold: approval_details.threshold,
-                            };
-
-                            queries::insert_event_entry(
-                                conn,
-                                sender.to_string(),
-                                tx_digest.clone(),
-                                "TransactionExecutedEvent".to_string(),
-                                *event_timestamp,
-                                Base64::encode(bcs::to_bytes(&tx_event)?),
-                            )?;
-                            // increment timestamp by 1 to ensure unique timestamps for events in the same tx
-                            *event_timestamp += 1;
-                            info!(
-                                "Inserted Transaction Executed Event for transaction {}",
-                                tx_digest
-                            );
-                            Ok(())
-                        } else {
-                            Ok(()) // Not an Isafe account, skip
-                        }
-                    })?;
-                } else {
-                    return Ok(()); // Not a sender address authenticator, skip
-                }
-            }
-            _ => return Ok(()), // Not a sender address authenticator, skip
-        }
         Ok(())
     }
 
@@ -318,9 +249,23 @@ impl IsafeWorker {
             }
             IsafeEvent::MemberRemoved(member_removed_event) => {
                 conn.transaction::<_, anyhow::Error, _>(|conn| {
-                    // TODO: Remove the member from the account
-                    // TODO: decrease the account's total weight accordingly
-                    // TODO: delete any pending approvals from this member
+                    queries::delete_member_from_account(
+                        conn,
+                        &member_removed_event.account_id,
+                        &member_removed_event.member.member_address,
+                    )?;
+                    // account's total weight is computed as sum(members.weight), so no need to adjust separately
+                    queries::delete_approvals_for_not_yet_executed_transactions(
+                        conn,
+                        &member_removed_event.account_id,
+                        &member_removed_event.member.member_address,
+                    )?;
+                    // member removal may affect proposed/approved transactions' approval status. Need to re-evaluate them
+                    queries::recheck_account_transactions_status(
+                        conn,
+                        &member_removed_event.account_id,
+                        event_timestamp,
+                    )?;
                     queries::insert_event_entry(
                         conn,
                         member_removed_event.account_id.to_string(),
@@ -339,9 +284,19 @@ impl IsafeWorker {
             }
             IsafeEvent::MemberWeightUpdated(member_updated_event) => {
                 conn.transaction::<_, anyhow::Error, _>(|conn| {
-                    // TODO: Update the member's weight in the account
-                    // TODO : adjust the account's total weight accordingly
-                    // TODO: re-evaluate any pending approvals if necessary
+                    queries::update_member_weight(
+                        conn,
+                        &member_updated_event.account_id,
+                        &member_updated_event.member.member_address,
+                        member_updated_event.member.weight,
+                    )?;
+                    // There could be proposed transactions that are now approved or lost approval due to weight change
+                    // Let's re-evaluate them
+                    queries::recheck_account_transactions_status(
+                        conn,
+                        &member_updated_event.account_id,
+                        event_timestamp,
+                    )?;
                     queries::insert_event_entry(
                         conn,
                         member_updated_event.account_id.to_string(),
@@ -362,8 +317,17 @@ impl IsafeWorker {
             }
             IsafeEvent::ThresholdChanged(th_changed_event) => {
                 conn.transaction::<_, anyhow::Error, _>(|conn| {
-                    // TODO: Update the account's threshold
-                    // TODO: any transaction became approved/lost approval status?
+                    queries::update_account_threshold(
+                        conn,
+                        &th_changed_event.account_id,
+                        th_changed_event.new_threshold,
+                    )?;
+                    // Threshold change may affect proposed/approved transactions' approval status. Need to re-evaluate
+                    queries::recheck_account_transactions_status(
+                        conn,
+                        &th_changed_event.account_id,
+                        event_timestamp,
+                    )?;
                     queries::insert_event_entry(
                         conn,
                         th_changed_event.account_id.to_string(),
@@ -499,9 +463,39 @@ impl IsafeWorker {
                     tx_digest.to_string()
                 );
             }
-            IsafeEvent::TransactionExecuted(_) => {
-                // this event is injected above in process_transaction() when we detect a transaction has been executed
-                warn!("TransactionExecuted event is never emitted on-chain");
+            IsafeEvent::TransactionExecuted(tx_executed_event) => {
+                let tx_digest_bytes: [u8; 32] = tx_executed_event
+                    .transaction_digest
+                    .clone()
+                    .try_into()
+                    .expect("Invalid transaction digest length");
+                let tx_digest = TransactionDigest::from(tx_digest_bytes);
+                info!(
+                    "Processing TransactionExecuted event for transaction: {:?}",
+                    tx_digest
+                );
+                conn.transaction::<_, anyhow::Error, _>(|conn| {
+                    queries::update_transaction_status(
+                        conn,
+                        tx_digest.to_string(),
+                        Status::Executed.into(),
+                    )?;
+                    queries::insert_event_entry(
+                        conn,
+                        tx_executed_event.account_id.to_string(),
+                        tx_digest_str.clone(),
+                        event.type_().to_string(),
+                        *event_timestamp,
+                        Base64::encode(bcs::to_bytes(&tx_executed_event)?),
+                    )
+                })?;
+                // increment timestamp by 1 to ensure unique timestamps for events in the same tx
+                *event_timestamp += 1;
+                info!(
+                    "Processed TransactionExecuted event for account {} transaction: {:?}",
+                    tx_executed_event.account_id,
+                    tx_digest.to_string(),
+                );
             }
             IsafeEvent::TransactionRemoved(tx_removed_event) => {
                 // TODO: remove the transaction from the transactions table?
@@ -521,6 +515,10 @@ impl IsafeWorker {
                     "Processed TransactionRemoved event for transaction: {:?}",
                     tx_removed_event.transaction_digest
                 );
+            }
+            // This event doesn't exist on-chain, it's for indexing purposes only
+            IsafeEvent::TransactionApprovalThresholdLost(_) => {
+                unreachable!()
             }
         }
         Ok(())
