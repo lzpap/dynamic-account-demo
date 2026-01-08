@@ -24,3 +24,34 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+html {
+  overflow-y: scroll;
+}
+
+/* Themed scrollbar (scoped via class to avoid global side-effects) */
+.scrollbar-theme {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 35%, transparent)
+    color-mix(in srgb, var(--foreground) 10%, var(--background));
+}
+
+.scrollbar-theme::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollbar-theme::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--foreground) 10%, var(--background));
+  border-radius: 999px;
+}
+
+.scrollbar-theme::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 35%, transparent);
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--foreground) 10%, var(--background));
+}
+
+.scrollbar-theme::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--foreground) 50%, transparent);
+}
