@@ -2,6 +2,7 @@
 
 import { ConnectButton } from '@iota/dapp-kit';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AccountSelector } from '@/components/AccountSelector';
 import { useISafeAccount } from '@/providers/ISafeAccountProvider';
 import { usePathname } from 'next/navigation';
@@ -13,7 +14,8 @@ export function Navbar() {
     return (
         <nav id="top-navbar" className="fixed top-0 left-0 w-full h-16 z-50 backdrop-blur-lg bg-foreground/5 flex items-center justify-between px-6">
             <div className="flex items-center gap-6">
-                <Link href="/" className="text-xl font-bold">
+                <Link href="/" className="text-xl font-bold inline-flex items-center gap-2">
+                    <Image src="/favicon.png" alt="iSafe" width={20} height={20} className="rounded-sm" />
                     iSafe
                 </Link>
                 {isafeAccount && (
