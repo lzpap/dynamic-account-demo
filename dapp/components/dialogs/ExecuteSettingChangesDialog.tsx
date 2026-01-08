@@ -183,7 +183,7 @@ export function ExecuteSettingChangesDialog({
             );
           }
           // we just proposed a transaction that can change the account state, so we need to invalidate related queries
-          queryClient.invalidateQueries({ queryKey: queryKey.transactions(accountAddress) });
+          queryClient.invalidateQueries();
           setStep(4); // 4a. Success
         setSuccess(true);
           return toBeProposedTxDigest;
@@ -296,7 +296,7 @@ export function ExecuteSettingChangesDialog({
                         </svg>
                       </span>
                     )}
-                  </div>
+                  </div>q
                 </li>
               ))}
           </ol>
@@ -310,7 +310,7 @@ export function ExecuteSettingChangesDialog({
               <div className="flex gap-3">
                 <button
                   className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium shadow hover:bg-blue-700 transition"
-                  onClick={() => redirect(`/${accountAddress}/transactions`)}
+                  onClick={() => redirect(`/${accountAddress}`)}
                 >
                   Go to Proposed Transactions
                 </button>

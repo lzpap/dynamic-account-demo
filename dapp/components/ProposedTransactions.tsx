@@ -8,6 +8,7 @@ import { ProposeTransactionDialog } from "./dialogs/ProposeTransactionDialog";
 import { ApproveTransactionDialog } from "./dialogs/ApproveTransactionDialog";
 import { useCurrentAccount } from "@iota/dapp-kit";
 import { ApprovalProgressBar } from "./ApprovalProgressBar";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ProposedTransactionsProps {
   transactions: TransactionSummary[];
@@ -16,6 +17,7 @@ interface ProposedTransactionsProps {
 export default function ProposedTransactions({
   transactions,
 }: ProposedTransactionsProps) {
+  const queryClient = useQueryClient();
   const [proposeDialogName, setProposeDialogName] = useState<string | null>(
     null
   );
@@ -209,14 +211,20 @@ export default function ProposedTransactions({
       {proposeDialogName && (
         <ProposeTransactionDialog
           name={proposeDialogName}
-          closeDialog={() => setProposeDialogName(null)}
+          closeDialog={() => {
+            queryClient.invalidateQueries();
+            setProposeDialogName(null);
+          }}
           onCompleted={() => setProposeDialogName(null)}
         />
       )}
       {approveTxDigestDialog && (
         <ApproveTransactionDialog
           transactionDigest={approveTxDigestDialog}
-          closeDialog={() => setApproveTxDigestDialog(null)}
+          closeDialog={() => {
+            queryClient.invalidateQueries();
+            setApproveTxDigestDialog(null);
+          }}
           onCompleted={() => setApproveTxDigestDialog(null)}
         />
       )}

@@ -6,6 +6,7 @@ import { formatTimestamp } from "@/lib/utils/formatTimestamp";
 import { ApprovalProgressBar } from "./ApprovalProgressBar";
 import { useState } from "react";
 import { ExecuteTransactionDialog } from "./dialogs/ExecuteTransactionDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ApprovedTransactionsProps {
   transactions: TransactionSummary[];
@@ -14,6 +15,7 @@ interface ApprovedTransactionsProps {
 export default function ApprovedTransactions({
   transactions,
 }: ApprovedTransactionsProps) {
+  const queryClient = useQueryClient();
   const [executeTxDigestDialog, setExecuteTxDigestDialog] = useState<
     string | null
   >(null);
@@ -138,7 +140,10 @@ export default function ApprovedTransactions({
       {executeTxDigestDialog && (
         <ExecuteTransactionDialog
           transactionDigest={executeTxDigestDialog}
-          closeDialog={() => setExecuteTxDigestDialog(null)}
+          closeDialog={() => {setExecuteTxDigestDialog(null)
+            queryClient.invalidateQueries();
+            setExecuteTxDigestDialog(null);
+          }}
           onCompleted={() => setExecuteTxDigestDialog(null)}
         />
       )}
