@@ -13,14 +13,288 @@ import {
   TransactionApprovalThresholdReachedEvent,
   TransactionExecutedEvent,
   TransactionRemovedEvent,
+  TransactionApprovalThresholdLostEvent,
 } from "@/lib/bcs/events";
 import { shortenAddress } from "@/lib/utils/shortenAddress";
 import { toBase58, toBase64 } from "@iota/iota-sdk/utils";
 
+export type EventTypeAccent = {
+  iconBg: string;
+  iconFg: string;
+  itemBg: string;
+  itemBorder: string;
+};
+
+export type EventTypeVisual = {
+  icon: React.ReactNode;
+  accent: EventTypeAccent;
+};
+
+export const EVENT_TYPE_VISUALS: Record<ParsedEvent["eventType"], EventTypeVisual> = {
+  AccountCreatedEvent: {
+    accent: {
+      iconBg: "bg-blue-500/10",
+      iconFg: "text-blue-500",
+      itemBg: "bg-blue-500/5",
+      itemBorder: "border-blue-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 12l9-9 9 9M9 21V12h6v9"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14v4" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 16h4" />
+      </svg>
+    ),
+  },
+  AccountRotatedEvent: {
+    accent: {
+      iconBg: "bg-indigo-500/10",
+      iconFg: "text-indigo-500",
+      itemBg: "bg-indigo-500/5",
+      itemBorder: "border-indigo-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M21 12a9 9 0 00-15.364-6.364M3 12a9 9 0 0015.364 6.364"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 5H5V3" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 21h2v-2" />
+      </svg>
+    ),
+  },
+  MemberAddedEvent: {
+    accent: {
+      iconBg: "bg-green-500/10",
+      iconFg: "text-green-500",
+      itemBg: "bg-green-500/5",
+      itemBorder: "border-green-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 11a4 4 0 100-8 4 4 0 000 8z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 8v6" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 11h-6" />
+      </svg>
+    ),
+  },
+  MemberRemovedEvent: {
+    accent: {
+      iconBg: "bg-red-500/10",
+      iconFg: "text-red-500",
+      itemBg: "bg-red-500/5",
+      itemBorder: "border-red-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 11a4 4 0 100-8 4 4 0 000 8z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 11h-6" />
+      </svg>
+    ),
+  },
+  MemberWeightUpdatedEvent: {
+    accent: {
+      iconBg: "bg-orange-500/10",
+      iconFg: "text-orange-500",
+      itemBg: "bg-orange-500/5",
+      itemBorder: "border-orange-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10v4M7 9v6M17 9v6M21 10v4" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12h10" />
+      </svg>
+    ),
+  },
+  ThresholdChangedEvent: {
+    accent: {
+      iconBg: "bg-purple-500/10",
+      iconFg: "text-purple-500",
+      itemBg: "bg-purple-500/5",
+      itemBorder: "border-purple-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 21V14M4 10V3M12 21V12M12 8V3M20 21V16M20 12V3"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h.01M12 8h.01M20 16h.01" />
+      </svg>
+    ),
+  },
+  GuardianChangedEvent: {
+    accent: {
+      iconBg: "bg-pink-500/10",
+      iconFg: "text-pink-500",
+      itemBg: "bg-pink-500/5",
+      itemBorder: "border-pink-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
+  TransactionProposedEvent: {
+    accent: {
+      iconBg: "bg-yellow-500/10",
+      iconFg: "text-yellow-500",
+      itemBg: "bg-yellow-500/5",
+      itemBorder: "border-yellow-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M2 21l21-9L2 3l7 9-7 9z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h14" />
+      </svg>
+    ),
+  },
+  TransactionApprovedEvent: {
+    accent: {
+      iconBg: "bg-teal-500/10",
+      iconFg: "text-teal-500",
+      itemBg: "bg-teal-500/5",
+      itemBorder: "border-teal-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+        />
+      </svg>
+    ),
+  },
+  TransactionApprovalThresholdReachedEvent: {
+    accent: {
+      iconBg: "bg-emerald-500/10",
+      iconFg: "text-emerald-500",
+      itemBg: "bg-emerald-500/5",
+      itemBorder: "border-emerald-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
+  TransactionApprovalThresholdLostEvent: {
+    accent: {
+      iconBg: "bg-amber-500/10",
+      iconFg: "text-amber-500",
+      itemBg: "bg-amber-500/5",
+      itemBorder: "border-amber-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h8" />
+      </svg>
+    ),
+  },
+  TransactionExecutedEvent: {
+    accent: {
+      iconBg: "bg-green-500/10",
+      iconFg: "text-green-600",
+      itemBg: "bg-green-500/5",
+      itemBorder: "border-green-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      </svg>
+    ),
+  },
+  TransactionRemovedEvent: {
+    accent: {
+      iconBg: "bg-red-500/10",
+      iconFg: "text-red-600",
+      itemBg: "bg-red-500/5",
+      itemBorder: "border-red-500/20",
+    },
+    icon: (
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 7h12" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7V5h6v2" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l1 14h6l1-14" />
+      </svg>
+    ),
+  },
+};
+
+export function getEventTypeVisual(eventType: ParsedEvent["eventType"]): EventTypeVisual {
+  return EVENT_TYPE_VISUALS[eventType];
+}
+
 export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
   // Render description and icon based on eventType
   let description = "";
-  let icon: React.ReactNode = null;
+  const visual = getEventTypeVisual(event.eventType);
+  const icon = visual?.icon;
+  const accent: EventTypeAccent = visual?.accent ?? {
+    iconBg: "bg-foreground/5",
+    iconFg: "text-foreground/70",
+    itemBg: "bg-background/60",
+    itemBorder: "border-foreground/10",
+  };
 
   switch (event.eventType) {
     case "AccountCreatedEvent":
@@ -33,19 +307,6 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
       description = `Account ${shortenAddress(
         accountCreatedData.account
       )} created (${accountCreatedData.threshold} out of ${total_weight})`;
-      icon = (
-        // House with plus (new account)
-        <svg
-          className="w-5 h-5 text-blue-500"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path d="M3 12l9-9 9 9" />
-          <rect x="6" y="12" width="12" height="8" rx="2" />
-          <path d="M12 16v4" stroke="#3b82f6" strokeWidth="2" />
-          <circle cx="12" cy="18" r="1.5" fill="#3b82f6" />
-        </svg>
-      );
       break;
     case "AccountRotatedEvent":
       const accountRotatedData =
@@ -57,38 +318,12 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
       }:: ${accountRotatedData.authenticator.moduleName}::${
         accountRotatedData.authenticator.functionName
       }`;
-      icon = (
-        // Rotating arrows (account rotation)
-        <svg
-          className="w-5 h-5 text-indigo-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path d="M4.93 19.07A10 10 0 1121 12.93" strokeWidth="2" />
-          <polyline points="23 4 23 10 17 10" strokeWidth="2" />
-        </svg>
-      );
       break;
     case "MemberAddedEvent":
       const memberAddedData = event.data as typeof MemberAddedEvent.$inferType;
       description = `Member ${shortenAddress(
         memberAddedData.member.addr
       )} added with weight ${memberAddedData.member.weight}`;
-      icon = (
-        // Person with plus (add member)
-        <svg
-          className="w-5 h-5 text-green-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <circle cx="9" cy="7" r="4" strokeWidth="2" />
-          <path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2" strokeWidth="2" />
-          <path d="M19 8v6" strokeWidth="2" />
-          <path d="M22 11h-6" strokeWidth="2" />
-        </svg>
-      );
       break;
     case "MemberRemovedEvent":
       const memberRemovedData =
@@ -96,19 +331,6 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
       description = `Member ${shortenAddress(
         memberRemovedData.member.addr
       )} removed`;
-      icon = (
-        // Person with minus (remove member)
-        <svg
-          className="w-5 h-5 text-red-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <circle cx="9" cy="7" r="4" strokeWidth="2" />
-          <path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2" strokeWidth="2" />
-          <path d="M22 11h-6" strokeWidth="2" />
-        </svg>
-      );
       break;
     case "MemberWeightUpdatedEvent":
       const memberWeightUpdatedData =
@@ -118,43 +340,11 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
       )} weight updated from ${memberWeightUpdatedData.oldWeight} to ${
         memberWeightUpdatedData.newWeight
       }`;
-      icon = (
-        // Dumbbell (weight update)
-        <svg
-          className="w-5 h-5 text-orange-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <rect x="2" y="9" width="4" height="6" rx="1" fill="#fb923c" />
-          <rect x="18" y="9" width="4" height="6" rx="1" fill="#fb923c" />
-          <rect x="6" y="11" width="12" height="2" rx="1" fill="#fb923c" />
-        </svg>
-      );
       break;
     case "ThresholdChangedEvent":
       const thresholdChangedData =
         event.data as typeof ThresholdChangedEvent.$inferType;
       description = `Threshold changed from ${thresholdChangedData.oldThreshold} to ${thresholdChangedData.newThreshold}`;
-      icon = (
-        // Sliders (threshold/setting)
-        <svg
-          className="w-5 h-5 text-purple-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <line x1="4" y1="21" x2="4" y2="14" strokeWidth="2" />
-          <line x1="4" y1="10" x2="4" y2="3" strokeWidth="2" />
-          <line x1="12" y1="21" x2="12" y2="12" strokeWidth="2" />
-          <line x1="12" y1="8" x2="12" y2="3" strokeWidth="2" />
-          <line x1="20" y1="21" x2="20" y2="16" strokeWidth="2" />
-          <line x1="20" y1="12" x2="20" y2="3" strokeWidth="2" />
-          <circle cx="4" cy="12" r="2" fill="#a78bfa" />
-          <circle cx="12" cy="8" r="2" fill="#a78bfa" />
-          <circle cx="20" cy="16" r="2" fill="#a78bfa" />
-        </svg>
-      );
       break;
     case "GuardianChangedEvent":
       const guardianChangedData =
@@ -166,18 +356,6 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
         new Uint8Array(guardianChangedData.newGuardian)
       );
       description = `Guardian changed from ${oldGuardianBase64} to ${newGuardianBase64}`;
-      icon = (
-        // Shield with check (guardian)
-        <svg
-          className="w-5 h-5 text-pink-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" strokeWidth="2" />
-          <path d="M9 12l2 2 4-4" stroke="#ec4899" strokeWidth="2" />
-        </svg>
-      );
       break;
     case "TransactionProposedEvent":
       const transactionProposedData =
@@ -185,29 +363,7 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
       const txDigestBase58 = toBase58(
         new Uint8Array(transactionProposedData.transactionDigest)
       );
-      description = `Transaction ${txDigestBase58} proposed by ${transactionProposedData.proposer}`;
-      icon = (
-        // Paper plane (propose/send transaction)
-        <svg
-          className="w-5 h-5 text-yellow-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <polygon
-            points="2 22 23 12 2 2 6 12 2 22"
-            fill="#facc15"
-          />
-          <line
-            x1="6"
-            y1="12"
-            x2="23"
-            y2="12"
-            stroke="#facc15"
-            strokeWidth="2"
-          />
-        </svg>
-      );
+      description = `Transaction ${txDigestBase58.slice(0, 6)}... proposed by ${shortenAddress(transactionProposedData.proposer)}`;
       break;
     case "TransactionApprovedEvent":
       const transactionApprovedData =
@@ -215,45 +371,28 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
       const txDigestBase58Approved = toBase58(
         new Uint8Array(transactionApprovedData.transactionDigest)
       );
-      description = `Transaction ${txDigestBase58Approved} approved by ${transactionApprovedData.approver}`;
-      icon = (
-        <svg
-          className="w-5 h-5 text-teal-500"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <rect x="4" y="4" width="12" height="12" rx="3" />
-        </svg>
-      );
+      description = `Transaction ${txDigestBase58Approved.slice(0, 6)}... approved by ${shortenAddress(transactionApprovedData.approver)}`;
       break;
     case "TransactionApprovalThresholdReachedEvent":
         const txApprovalThresholdData = event.data as typeof TransactionApprovalThresholdReachedEvent.$inferType;
         const txDigestBase58Threshold = toBase58(
           new Uint8Array(txApprovalThresholdData.transactionDigest)
         );
-        description = `Transaction ${txDigestBase58Threshold} reached approval threshold of ${txApprovalThresholdData.threshold}`;
-        icon = (
-          <svg
-            className="w-5 h-5 text-green-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <rect x="4" y="4" width="12" height="12" rx="3" />
-          </svg>
+        description = `Transaction ${txDigestBase58Threshold.slice(0, 6)}... reached approval threshold of ${txApprovalThresholdData.threshold}`;
+        break;
+    case "TransactionApprovalThresholdLostEvent":
+        const txApprovalThresholdLostData = event.data as typeof TransactionApprovalThresholdLostEvent.$inferType;
+        const txDigestBase58ThresholdLost = toBase58(
+          new Uint8Array(txApprovalThresholdLostData.transactionDigest)
         );
+        description = `Transaction ${txDigestBase58ThresholdLost.slice(0, 6)}...  fell below threshold of ${txApprovalThresholdLostData.threshold}`;
         break;
     case "TransactionExecutedEvent":
         const transactionExecutedData = event.data as typeof TransactionExecutedEvent.$inferType;
-        description = `Transaction ${transactionExecutedData.transactionDigest} executed`;
-        icon = (
-          <svg
-            className="w-5 h-5 text-green-700"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <rect x="4" y="4" width="12" height="12" rx="3" />
-          </svg>
+        const txDigestBase58Executed = toBase58(
+          new Uint8Array(transactionExecutedData.transactionDigest)
         );
+        description = `Transaction ${txDigestBase58Executed.slice(0, 6)}...  executed`;
         break;
     case "TransactionRemovedEvent":
       const transactionRemovedData =
@@ -262,37 +401,29 @@ export const EventItem: React.FC<{ event: ParsedEvent }> = ({ event }) => {
         new Uint8Array(transactionRemovedData.transactionDigest)
       );
       description = `Transaction ${txDigestBase58Removed} removed`;
-      icon = (
-        <svg
-          className="w-5 h-5 text-red-600"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <rect x="4" y="4" width="12" height="12" rx="3" />
-        </svg>
-      );
       break;
     default:
       description = `Unknown event`;
-      icon = (
-        <svg
-          className="w-5 h-5 text-gray-500"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <circle cx="10" cy="10" r="8" />
-        </svg>
-      );
   }
 
   return (
-    <div className="bg-background px-4 py-3 rounded-md border border-foreground/20 hover:border-foreground/40 transition">
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-0.5">{icon}</div>
+    <div
+      className={`${accent.itemBg} ${accent.itemBorder} px-3 py-2 rounded-lg border hover:border-foreground/30 transition backdrop-blur`}
+    >
+      <div className="flex items-start gap-2.5">
+        <div
+          className={`flex-shrink-0 mt-0.5 w-7 h-7 rounded-md ${accent.iconBg} ${accent.iconFg} border border-foreground/10 flex items-center justify-center`}
+        >
+          {icon}
+        </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-foreground/80">{description}</div>
-          <div className="text-xs text-foreground/60 mt-1">
-            {event.timestamp.toLocaleString()}
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-sm text-foreground/90 font-semibold break-words">
+              {description}
+            </div>
+            <div className="text-xs text-foreground/60 whitespace-nowrap flex-shrink-0 font-medium">
+              {event.timestamp.toLocaleString()}
+            </div>
           </div>
         </div>
       </div>

@@ -1,25 +1,31 @@
 import { useGetAccountEvents, ParsedEvent } from '@/hooks/useGetAccountEvents';
 import React from 'react';
-import { EventItem } from './EventItem';
+import { EventItem, getEventTypeVisual } from './EventItem';
 
 
-interface AccountHistoryProps {
+interface AccountActivityProps {
   accountAddress: string;
 }
 
-export function AccountHistory({ accountAddress }: AccountHistoryProps) {
+export function AccountActivity({ accountAddress }: AccountActivityProps) {
     const [selectedFilters, setSelectedFilters] = React.useState<Set<ParsedEvent['eventType']>>(new Set());
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+    const filterContainerRef = React.useRef<HTMLDivElement | null>(null);
 
-    const eventTypes: Array<{ type: ParsedEvent['eventType']; label: string; color: string }> = [
-        { type: 'AccountCreatedEvent', label: 'Account Created', color: 'text-blue-500' },
-        { type: 'MemberAddedEvent', label: 'Member Added', color: 'text-green-500' },
-        { type: 'MemberRemovedEvent', label: 'Member Removed', color: 'text-red-500' },
-        { type: 'ThresholdChangedEvent', label: 'Threshold Changed', color: 'text-purple-500' },
-        { type: 'MemberWeightUpdatedEvent', label: 'Weight Updated', color: 'text-orange-500' },
-        { type: 'TransactionProposedEvent', label: 'TX Proposed', color: 'text-yellow-500' },
-        { type: 'TransactionApprovedEvent', label: 'TX Approved', color: 'text-teal-500' },
-        { type: 'TransactionExecutedEvent', label: 'TX Executed', color: 'text-green-600' },
+    const eventTypes: Array<{ type: ParsedEvent['eventType']; label: string }> = [
+        { type: 'AccountCreatedEvent', label: 'Account Created' },
+        { type: 'AccountRotatedEvent', label: 'Account Rotated' },
+        { type: 'MemberAddedEvent', label: 'Member Added' },
+        { type: 'MemberRemovedEvent', label: 'Member Removed' },
+        { type: 'ThresholdChangedEvent', label: 'Threshold Changed' },
+        { type: 'MemberWeightUpdatedEvent', label: 'Weight Updated' },
+        { type: 'GuardianChangedEvent', label: 'Guardian Changed' },
+        { type: 'TransactionProposedEvent', label: 'TX Proposed' },
+        { type: 'TransactionApprovedEvent', label: 'TX Approved' },
+        { type: 'TransactionApprovalThresholdReachedEvent', label: 'TX Threshold Reached' },
+        { type: 'TransactionApprovalThresholdLostEvent', label: 'TX Threshold Lost' },
+        { type: 'TransactionExecutedEvent', label: 'TX Executed' },
+        { type: 'TransactionRemovedEvent', label: 'TX Removed' },
     ];
 
     const toggleFilter = (type: ParsedEvent['eventType']) => {
@@ -36,6 +42,34 @@ export function AccountHistory({ accountAddress }: AccountHistoryProps) {
         setSelectedFilters(new Set());
     };
 
+    React.useEffect(() => {
+        if (!isFilterOpen) return;
+
+        const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+            const targetNode = event.target as Node | null;
+            if (!targetNode) return;
+            if (filterContainerRef.current && !filterContainerRef.current.contains(targetNode)) {
+                setIsFilterOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsFilterOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('touchstart', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('touchstart', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isFilterOpen]);
+
     const { data: events, isPending, isError, error } = useGetAccountEvents(accountAddress);
 
     const filteredEvents = selectedFilters.size > 0
@@ -47,8 +81,8 @@ export function AccountHistory({ accountAddress }: AccountHistoryProps) {
 
     if (isPending) {
         return (
-            <div className="bg-foreground/5 rounded-lg p-6">
-                <h2 className="text-2xl font-bold mb-4">Account History</h2>
+            <div className="bg-background/80 backdrop-blur rounded-lg border border-foreground/10 p-5">
+                <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-4">Activity</h3>
                 <div className="text-center py-8 text-foreground/60">
                     <svg className="w-8 h-8 mx-auto mb-3 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -62,8 +96,8 @@ export function AccountHistory({ accountAddress }: AccountHistoryProps) {
 
     if (isError) {
         return (
-            <div className="bg-foreground/5 rounded-lg p-6">
-                <h2 className="text-2xl font-bold mb-4">Account History</h2>
+            <div className="bg-background/80 backdrop-blur rounded-lg border border-foreground/10 p-5">
+                <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-4">Activity</h3>
                 <div className="text-center py-8 text-red-500">
                     <svg className="w-16 h-16 mx-auto mb-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -75,15 +109,15 @@ export function AccountHistory({ accountAddress }: AccountHistoryProps) {
     }
 
     return (
-        <div className="bg-foreground/5 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">Account History</h2>
+        <div className="bg-background/80 backdrop-blur rounded-lg border border-foreground/10 p-5">
+            <div className="flex items-start justify-between mb-4">
+                <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">Activity</h3>
                 
                 {/* Filter Button */}
-                <div className="relative">
+                <div className="relative" ref={filterContainerRef}>
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className="flex items-center gap-2 px-3 py-2 bg-foreground/10 hover:bg-foreground/20 rounded-md text-sm font-medium transition"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-foreground/5 hover:bg-foreground/10 border border-foreground/10 rounded-md text-sm font-medium text-foreground/80 transition"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -111,8 +145,10 @@ export function AccountHistory({ accountAddress }: AccountHistoryProps) {
                                         </button>
                                     )}
                                 </div>
-                                <div className="space-y-2 max-h-80 overflow-y-auto">
-                                    {eventTypes.map(({ type, label, color }) => (
+                                <div className="scrollbar-theme space-y-2 max-h-80 overflow-y-scroll pr-1">
+                                    {eventTypes.map(({ type, label }) => {
+                                        const visual = getEventTypeVisual(type);
+                                        return (
                                         <label
                                             key={type}
                                             className="flex items-center gap-2 px-2 py-1.5 hover:bg-foreground/5 rounded cursor-pointer"
@@ -123,10 +159,15 @@ export function AccountHistory({ accountAddress }: AccountHistoryProps) {
                                                 onChange={() => toggleFilter(type)}
                                                 className="rounded border-foreground/20"
                                             />
-                                            <span className={`w-3 h-3 rounded-full ${color} bg-current opacity-60`}></span>
+                                            <span
+                                                className={`w-7 h-7 rounded-md ${visual.accent.iconBg} ${visual.accent.iconFg} border border-foreground/10 flex items-center justify-center`}
+                                            >
+                                                {visual.icon}
+                                            </span>
                                             <span className="text-sm flex-1">{label}</span>
                                         </label>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -134,7 +175,7 @@ export function AccountHistory({ accountAddress }: AccountHistoryProps) {
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="scrollbar-theme space-y-2 h-72 overflow-y-scroll pr-1">
                 {sortedEvents && sortedEvents.length > 0 ? (
                     sortedEvents.map((event) => (
                         <EventItem key={event.firedInTx+event.eventType} event={event} />
