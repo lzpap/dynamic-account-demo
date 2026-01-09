@@ -38,9 +38,15 @@ export function ApproveTransactionDialog({
       setSimulationError(null);
 
       try {
-        await client.dryRunTransactionBlock({
+        const result = await client.dryRunTransactionBlock({
           transactionBlock: bytes,
         });
+
+        if (result.effects.status.status == "failure") {
+          setSimulationError(`Simulation failed: Transaction execution failed with ${result.effects.status.error}`);
+          setSimulationPassed(false);
+          return;
+        }
 
         setSimulationPassed(true);
       } catch (error) {

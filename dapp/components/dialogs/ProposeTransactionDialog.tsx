@@ -108,6 +108,11 @@ export function ProposeTransactionDialog({
       });
 
       // TODO: show the result of the simulation in more detail
+      if (result.effects.status.status == "failure") {
+        setSimulationError(`Simulation failed: Transaction execution failed with ${result.effects.status.error}`);
+        setSimulationPassed(false);
+        return;
+      }
 
       setSimulationPassed(true);
     } catch (error) {
