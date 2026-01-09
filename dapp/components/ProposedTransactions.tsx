@@ -1,6 +1,6 @@
 "use client";
 
-import { TransactionSummary } from "@/hooks/useGetAccountTransactions";
+import { TransactionSummary } from "@/lib/clients/IsafeIndexerClient";
 import { shortenAddress } from "@/lib/utils/shortenAddress";
 import { formatTimestamp } from "@/lib/utils/formatTimestamp";
 import { useState } from "react";

@@ -4,7 +4,7 @@ import { useState } from "react";
 import ProposedTransactions from "@/components/ProposedTransactions";
 import ApprovedTransactions from "@/components/ApprovedTransactions";
 import ExecutedTransactions from "@/components/ExecutedTransactions";
-import { useGetAccountTransactions } from "@/hooks/useGetAccountTransactions";
+import { useGetSortedAccountTransactions } from "@/hooks/useGetAccountTransactions";
 
 type TabType = "proposed" | "approved" | "executed";
 
@@ -12,7 +12,7 @@ export default function Transactions({accountAddress}: {accountAddress: string})
   const [activeTab, setActiveTab] = useState<TabType>("proposed");
 
   // Fetch transactions data here
-  const { data: transactionsData } = useGetAccountTransactions(accountAddress);
+  const { data: transactionsData } = useGetSortedAccountTransactions(accountAddress);
 
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count: number }[] = [

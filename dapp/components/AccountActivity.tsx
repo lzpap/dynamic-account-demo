@@ -1,6 +1,7 @@
-import { useGetAccountEvents, ParsedEvent } from '@/hooks/useGetAccountEvents';
+import { useGetAccountEvents } from '@/hooks/useGetAccountEvents';
 import React from 'react';
 import { EventItem, getEventTypeVisual } from './EventItem';
+import { IsafeEvent } from '@/lib/clients/IsafeIndexerClient';
 
 
 interface AccountActivityProps {
@@ -8,11 +9,11 @@ interface AccountActivityProps {
 }
 
 export function AccountActivity({ accountAddress }: AccountActivityProps) {
-    const [selectedFilters, setSelectedFilters] = React.useState<Set<ParsedEvent['eventType']>>(new Set());
+    const [selectedFilters, setSelectedFilters] = React.useState<Set<IsafeEvent['eventType']>>(new Set());
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
     const filterContainerRef = React.useRef<HTMLDivElement | null>(null);
 
-    const eventTypes: Array<{ type: ParsedEvent['eventType']; label: string }> = [
+    const eventTypes: Array<{ type: IsafeEvent['eventType']; label: string }> = [
         { type: 'AccountCreatedEvent', label: 'Account Created' },
         { type: 'AccountRotatedEvent', label: 'Account Rotated' },
         { type: 'MemberAddedEvent', label: 'Member Added' },
@@ -28,7 +29,7 @@ export function AccountActivity({ accountAddress }: AccountActivityProps) {
         { type: 'TransactionRemovedEvent', label: 'TX Removed' },
     ];
 
-    const toggleFilter = (type: ParsedEvent['eventType']) => {
+    const toggleFilter = (type: IsafeEvent['eventType']) => {
         const newFilters = new Set(selectedFilters);
         if (newFilters.has(type)) {
             newFilters.delete(type);

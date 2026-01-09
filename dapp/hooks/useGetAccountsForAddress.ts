@@ -1,14 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKey } from './queryKey';
+import { useIsafeIndexerClientContext } from '@/contexts/IsafeIndexerClientContext';
 
 export function useGetAccountsForAddress(address: string) {
+    const indexerClient = useIsafeIndexerClientContext();
     return useQuery({
         queryKey: queryKey.member_accounts(address),
         queryFn: async () => {
-            // TODO: Refactor with a proper client call to the indexer service
-            const data = await fetch(`http://127.0.0.1:3030/accounts/${address}`).then(res => res.json()) as getAccountsForAddress;
-
-            return data.accounts;
+            return indexerClient.getAccountsForAddress(address);
         },
         enabled: !!address,
         staleTime: 1000,

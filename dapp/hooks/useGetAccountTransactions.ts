@@ -1,20 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKey } from './queryKey';
+import { TransactionSummary } from '@/lib/clients/IsafeIndexerClient';
+import { useIsafeIndexerClientContext } from '@/contexts/IsafeIndexerClientContext';
 
-export function useGetAccountTransactions(accountId: string) {
+export function useGetSortedAccountTransactions(accountId: string) {
+    const indexerClient = useIsafeIndexerClientContext();
     return useQuery({
         queryKey: queryKey.transactions(accountId),
         queryFn: async () => {
             // get all transactions from the custom indexer for the account
-
-            // TODO: replace with proper client call when available
-            const data = await fetch(`http://127.0.0.1:3030/transactions/${accountId}`).then(res => res.json()) as getTransctionsForAccount;
+            const data = await indexerClient.getAccountTransactions(accountId);
 
             // sort them into proposed, approved, executed
             return {
-                proposed: data.transactions.filter(tx => tx.status === 'Proposed'),
-                approved: data.transactions.filter(tx => tx.status === 'Approved'),
-                executed: data.transactions.filter(tx => tx.status === 'Executed'),
+                proposed: data.filter(tx => tx.status === 'Proposed'),
+                approved: data.filter(tx => tx.status === 'Approved'),
+                executed: data.filter(tx => tx.status === 'Executed'),
             };
 
 
@@ -28,20 +29,9 @@ export function useGetAccountTransactions(accountId: string) {
 }
 
 
-export type getTransctionsForAccount = {
-    transactions: TransactionSummary[];
-} 
 
-export type TransactionSummary = {
-    transactionDigest: string;
-    proposerAddress: string;
-    status: 'Proposed' | 'Approved' | 'Executed' | 'Rejected';
-    currentApprovals: number;
-    threshold: number;
-    totalAccountWeight: number;
-    approvedBy: string[];
-    createdAt: number;
-}
+
+
 
 export type SortedTransactions = {
     proposed: TransactionSummary[];
