@@ -20,7 +20,7 @@ interface ExecuteSettingChangesDialogProps {
   // Optionally, you can pass settings change params here
 }
 
-const GAS_BUDGET = 1000000;
+const GAS_BUDGET = 10000000;
 
 export function ExecuteSettingChangesDialog({
   action,
@@ -393,7 +393,6 @@ export function ExecuteSettingChangesDialog({
                       </span>
                     )}
                   </div>
-                  q
                 </li>
               ))}
           </ol>
