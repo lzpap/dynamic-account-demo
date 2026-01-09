@@ -1,13 +1,7 @@
-import { useIotaClient } from '@iota/dapp-kit';
 import { useQuery } from '@tanstack/react-query';
 import { queryKey } from './queryKey';
-import { CONFIG } from '@/config/config';
 
 export function useGetAccountTransactions(accountId: string) {
-    const client = useIotaClient();
-
-    const expectedType = `${CONFIG.packageId}::account::Account`;
-
     return useQuery({
         queryKey: queryKey.transactions(accountId),
         queryFn: async () => {

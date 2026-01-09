@@ -9,6 +9,7 @@ import { ApproveTransactionDialog } from "./dialogs/ApproveTransactionDialog";
 import { useCurrentAccount } from "@iota/dapp-kit";
 import { ApprovalProgressBar } from "./ApprovalProgressBar";
 import { useQueryClient } from "@tanstack/react-query";
+import { useGetTransactionDetails } from "@/hooks/useGetTransactionDetails";
 
 interface ProposedTransactionsProps {
   transactions: TransactionSummary[];
@@ -18,6 +19,7 @@ export default function ProposedTransactions({
   transactions,
 }: ProposedTransactionsProps) {
   const queryClient = useQueryClient();
+
   const [proposeDialogName, setProposeDialogName] = useState<string | null>(
     null
   );
@@ -29,6 +31,17 @@ export default function ProposedTransactions({
   const handleApprove = (txDigest: string) => {
     setApproveTxDigestDialog(txDigest);
   };
+
+  const { data, isLoading, error } = useGetTransactionDetails(
+    transactions.map((tx) => tx.transactionDigest)
+  );
+  if (isLoading) {
+    return <div>Loading transactions...</div>;
+  }
+
+  if (error || (!data && !isLoading)) {
+    return <div>Error loading transaction details: {error?.message}</div>;
+  }
 
   return (
     <>
@@ -103,7 +116,7 @@ export default function ProposedTransactions({
           </div>
         ) : (
           <div className="space-y-3">
-            {transactions.map((tx) => {
+            {transactions.map((tx, index) => {
               const hasApproved = currentAccount?.address
                 ? tx.approvedBy.includes(currentAccount.address)
                 : false;
@@ -132,7 +145,10 @@ export default function ProposedTransactions({
                       </div>
                       <div>
                         <p className="font-mono text-sm text-foreground">
-                          {shortenAddress(tx.transactionDigest)}
+                          {data ? data[index]?.description : "Loading..."}
+                        </p>
+                        <p className="text-sm text-foreground/60">
+                          Digest: {tx.transactionDigest}
                         </p>
                         <p className="text-sm text-foreground/60">
                           Proposed by {shortenAddress(tx.proposerAddress)}

@@ -7,6 +7,7 @@ import { ApprovalProgressBar } from "./ApprovalProgressBar";
 import { useState } from "react";
 import { ExecuteTransactionDialog } from "./dialogs/ExecuteTransactionDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { useGetTransactionDetails } from "@/hooks/useGetTransactionDetails";
 
 interface ApprovedTransactionsProps {
   transactions: TransactionSummary[];
@@ -22,6 +23,17 @@ export default function ApprovedTransactions({
   const handleExecute = async (txDigest: string) => {
     setExecuteTxDigestDialog(txDigest);
   };
+
+  const { data, isLoading, error } = useGetTransactionDetails(
+    transactions.map((tx) => tx.transactionDigest)
+  );
+  if (isLoading) {
+    return <div>Loading transactions...</div>;
+  }
+
+  if (error || (!data && !isLoading)) {
+    return <div>Error loading transaction details: {error?.message}</div>;
+  }
 
   return (
     <>
@@ -73,7 +85,7 @@ export default function ApprovedTransactions({
           </div>
         ) : (
           <div className="space-y-3">
-            {transactions.map((tx) => (
+            {transactions.map((tx, index) => (
               <div
                 key={tx.transactionDigest}
                 className="bg-background rounded-lg border border-foreground/10 p-4 hover:border-foreground/20 transition"
@@ -97,8 +109,12 @@ export default function ApprovedTransactions({
                     </div>
                     <div>
                       <p className="font-mono text-sm text-foreground">
-                        {shortenAddress(tx.transactionDigest)}
+                        {data ? data[index]?.description : "Loading..."}
                       </p>
+                      <p className="text-sm text-foreground/60">
+                        Digest: {tx.transactionDigest}
+                      </p>
+
                       <p className="text-sm text-foreground/60">
                         Proposed by {shortenAddress(tx.proposerAddress)}
                       </p>
@@ -140,7 +156,8 @@ export default function ApprovedTransactions({
       {executeTxDigestDialog && (
         <ExecuteTransactionDialog
           transactionDigest={executeTxDigestDialog}
-          closeDialog={() => {setExecuteTxDigestDialog(null)
+          closeDialog={() => {
+            setExecuteTxDigestDialog(null);
             queryClient.invalidateQueries();
             setExecuteTxDigestDialog(null);
           }}

@@ -3,6 +3,7 @@
 import { TransactionSummary } from "@/hooks/useGetAccountTransactions";
 import { shortenAddress } from "@/lib/utils/shortenAddress";
 import { formatTimestamp } from "@/lib/utils/formatTimestamp";
+import { useGetTransactionDetails } from "@/hooks/useGetTransactionDetails";
 
 interface ExecutedTransactionsProps {
   transactions: TransactionSummary[];
@@ -11,6 +12,16 @@ interface ExecutedTransactionsProps {
 export default function ExecutedTransactions({
   transactions,
 }: ExecutedTransactionsProps) {
+  const { data, isLoading, error } = useGetTransactionDetails(
+    transactions.map((tx) => tx.transactionDigest)
+  );
+  if (isLoading) {
+    return <div>Loading transactions...</div>;
+  }
+
+  if (error || (!data && !isLoading)) {
+    return <div>Error loading transaction details: {error?.message}</div>;
+  }
   return (
     <div className="bg-foreground/5 rounded-xl p-6 border border-foreground/10">
       <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -60,7 +71,7 @@ export default function ExecutedTransactions({
         </div>
       ) : (
         <div className="space-y-3">
-          {transactions.map((tx) => (
+          {transactions.map((tx, index) => (
             <div
               key={tx.transactionDigest}
               className="bg-background rounded-lg border border-foreground/10 p-4 hover:border-foreground/20 transition"
@@ -84,6 +95,9 @@ export default function ExecutedTransactions({
                   </div>
                   <div>
                     <p className="font-mono text-sm text-foreground break-all">
+                      {data ? data[index]?.description : "Loading..."}
+                    </p>
+                    <p className="text-sm text-foreground/60">
                       {tx.transactionDigest}
                     </p>
                     <p className="text-sm text-foreground/60">

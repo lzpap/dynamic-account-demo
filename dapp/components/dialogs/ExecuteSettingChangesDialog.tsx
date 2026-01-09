@@ -158,16 +158,16 @@ export function ExecuteSettingChangesDialog({
           let description = "";
           switch (action.type) {
             case "add_member":
-              description = `Propose to add member ${action.address} with weight ${action.weight}`;
+              description = `Add member ${action.address} with weight ${action.weight}`;
               break;
             case "remove_member":
-              description = `Propose to remove member ${action.address}`;
+              description = `Remove member ${action.address}`;
               break;
             case "update_weight":
-              description = `Propose to update weight of member ${action.address} to ${action.newWeight}`;
+              description = `Update weight of member ${action.address} to ${action.newWeight}`;
               break;
             case "set_threshold":
-              description = `Propose to set new threshold to ${action.newThreshold}`;
+              description = `Set new threshold to ${action.newThreshold}`;
               break;
             default:
               // no additional action needed for now
@@ -185,7 +185,7 @@ export function ExecuteSettingChangesDialog({
           // we just proposed a transaction that can change the account state, so we need to invalidate related queries
           queryClient.invalidateQueries();
           setStep(4); // 4a. Success
-        setSuccess(true);
+          setSuccess(true);
           return toBeProposedTxDigest;
         },
         onError: (err) => {
@@ -232,11 +232,68 @@ export function ExecuteSettingChangesDialog({
   ];
 
   const stepIcons = [
-    <svg key="prepare" className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
-    <svg key="gas" className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path d="M12 8v4l3 3" strokeWidth="2" /></svg>,
-    <svg key="propose" className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" strokeWidth="2" /><path d="M8 12h8" strokeWidth="2" /></svg>,
-    <svg key="success" className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
-    <svg key="fail" className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+    <svg
+      key="prepare"
+      className="w-6 h-6 text-blue-500"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 4v16m8-8H4"
+      />
+    </svg>,
+    <svg
+      key="gas"
+      className="w-6 h-6 text-yellow-500"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <circle cx="12" cy="12" r="10" strokeWidth="2" />
+      <path d="M12 8v4l3 3" strokeWidth="2" />
+    </svg>,
+    <svg
+      key="propose"
+      className="w-6 h-6 text-purple-500"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <rect x="4" y="4" width="16" height="16" rx="4" strokeWidth="2" />
+      <path d="M8 12h8" strokeWidth="2" />
+    </svg>,
+    <svg
+      key="success"
+      className="w-6 h-6 text-green-500"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M5 13l4 4L19 7"
+      />
+    </svg>,
+    <svg
+      key="fail"
+      className="w-6 h-6 text-red-500"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18L18 6M6 6l12 12"
+      />
+    </svg>,
   ];
 
   return (
@@ -248,7 +305,19 @@ export function ExecuteSettingChangesDialog({
       <div className="relative bg-background border border-foreground/20 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-fade-in">
         <div className="flex items-center justify-between p-6 border-b border-foreground/10">
           <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            <svg
+              className="w-7 h-7 text-blue-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
             Execute Setting Changes
           </h2>
           <button
@@ -256,7 +325,19 @@ export function ExecuteSettingChangesDialog({
             className="p-2 hover:bg-foreground/10 rounded-full transition"
             aria-label="Close dialog"
           >
-            <svg className="w-6 h-6 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <svg
+              className="w-6 h-6 text-foreground/60"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
         <div className="p-8 space-y-8">
@@ -282,7 +363,7 @@ export function ExecuteSettingChangesDialog({
                           : idx + 1 === step
                           ? "bg-blue-100 text-blue-600 animate-pulse"
                           : "bg-foreground/10 text-foreground/60",
-                        "rounded-full p-2 flex items-center justify-center transition-all"
+                        "rounded-full p-2 flex items-center justify-center transition-all",
                       ].join(" ")}
                     >
                       {stepIcons[idx]}
@@ -290,13 +371,29 @@ export function ExecuteSettingChangesDialog({
                     <span className="text-base">{label}</span>
                     {idx + 1 === step && !error && !success && (
                       <span className="ml-2 animate-spin inline-block align-middle">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="w-4 h-4 text-blue-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                       </span>
                     )}
-                  </div>q
+                  </div>
+                  q
                 </li>
               ))}
           </ol>
@@ -304,8 +401,21 @@ export function ExecuteSettingChangesDialog({
           {success && proposedTxDigest && (
             <div className="mt-8 flex flex-col items-center gap-4">
               <span className="text-green-600 text-lg font-semibold flex items-center gap-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                Proposed setting change successfully with digest {proposedTxDigest}!
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Proposed setting change successfully with digest{" "}
+                {proposedTxDigest}!
               </span>
               <div className="flex gap-3">
                 <button
@@ -325,7 +435,19 @@ export function ExecuteSettingChangesDialog({
           )}
           {error && (
             <div className="mt-8 text-red-600 text-lg font-semibold flex items-center gap-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
               Ooops, something went wrong: {error}
             </div>
           )}

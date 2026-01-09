@@ -13,6 +13,7 @@ export const queryKey = {
     member_accounts: (address: string) => [...queryKey.all, 'member-accounts', address],
     allowed_authenticators: (account_id: string) => [...queryKey.all, 'allowed-authenticators', account_id],
     transactions: (account_id: string) => [...queryKey.all, 'transactions', account_id],
+    transactionDetails: (transaction_digest: string) => [...queryKey.all, 'transaction-details', transaction_digest],
     events: (account_id: string) => [...queryKey.all, 'events', account_id],
     balance: (account_id: string) => [...queryKey.all, 'balance', account_id],
 };
