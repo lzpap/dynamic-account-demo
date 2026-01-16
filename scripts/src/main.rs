@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
         IotaJsonValue::from_object_id(ObjectID::from_str(&std::env::var("RECIPIENT")?)?),
     ];
     let gas = ObjectID::from_str(&std::env::var("GAS_COIN")?)?;
-    let gas_budget = 1000000;
+    let gas_budget = 10000000;
 
     let mut data = builder
         .move_call(

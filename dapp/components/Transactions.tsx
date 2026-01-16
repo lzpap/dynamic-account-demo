@@ -8,6 +8,8 @@ import { useGetSortedAccountTransactions } from "@/hooks/useGetAccountTransactio
 
 type TabType = "proposed" | "approved" | "executed";
 
+// TODO: identify outdated transactions and hide them with an option to show
+
 export default function Transactions({accountAddress}: {accountAddress: string}) {
   const [activeTab, setActiveTab] = useState<TabType>("proposed");
 
