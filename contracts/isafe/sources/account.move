@@ -1,6 +1,7 @@
 module isafe::account;
 
-use iota::account::{has_auth_info_v1, AuthenticatorInfoV1};
+use iota::account::{has_auth_function_ref_v1, rotate_auth_function_ref_v1, borrow_auth_function_ref_v1};
+use iota::authenticator_function::AuthenticatorFunctionRefV1;
 use iota::dynamic_field;
 use iota::table::{Table, new as new_table};
 use std::ascii::String;
@@ -39,7 +40,7 @@ public struct Account has key, store {
 // This struct cannot be stored on-chain.
 public struct AccountTicket {
     account: Account,
-    authenticator: AuthenticatorInfoV1<Account>,
+    authenticator: AuthenticatorFunctionRefV1<Account>,
 }
 
 // Create a new account ticket with a default authenticator app key of type T.
@@ -47,7 +48,7 @@ public struct AccountTicket {
 // to share the account object.
 public fun create_ticket_with_default_authenticator<T: drop>(
     _app_key: T,
-    authenticator: AuthenticatorInfoV1<Account>,
+    authenticator: AuthenticatorFunctionRefV1<Account>,
     ctx: &mut TxContext,
 ): AccountTicket {
     let default_authenticator = get<T>().into_string();
@@ -118,14 +119,17 @@ public fun remove_allowed_authenticator<T: drop>(
 /// Aborts if:
 /// - the app key is not authorized to modify the account.
 /// - no authenticator is attached to the account.
-public fun rotate_auth_info_v1<T: drop>(
+public fun rotate_auth_function_v1<T: drop>(
     self: &mut Account,
-    authenticator: AuthenticatorInfoV1<Account>,
+    authenticator: AuthenticatorFunctionRefV1<Account>,
     app_key: T,
-): AuthenticatorInfoV1<Account> {
+): AuthenticatorFunctionRefV1<Account> {
     assert!(app_key_allowed(self, app_key), EAppKeyNotAuthorized);
-    // TODO check that the authenticator function belongs to the module of app_key_type
-    iota::account::rotate_auth_info_v1(self, authenticator)
+    // verify that the authenticator function belongs to the module of app_key_type
+    let app_key_type_name = get<T>();
+    assert!(authenticator.package().to_address().to_ascii_string() == app_key_type_name.get_address(), EAppKeyNotAuthorized);
+    assert!(authenticator.module_name() == app_key_type_name.get_module(), EAppKeyNotAuthorized);
+    rotate_auth_function_ref_v1(self, authenticator)
 }
 
 // -------------------------------- Dynamic Field Interface --------------------------------
@@ -156,7 +160,7 @@ public fun remove_dynamic_field<T: drop, Name: copy + drop + store, Value: store
     let value: Value = dynamic_field::remove(&mut account.id, name);
 
     // We can't leave the account without authenticator, otherwise the account is locked forever.
-    assert!(has_auth_info_v1(account.borrow_id()), ENoAuthenticatorAttached);
+    assert!(has_auth_function_ref_v1(account.borrow_id()), ENoAuthenticatorAttached);
 
     value
 }
@@ -185,8 +189,8 @@ public fun get_address(self: &Account): address {
 }
 
 // Returns the authenticator info attached to the account
-public fun get_authenticator(self: &Account): &AuthenticatorInfoV1<Account> {
-    iota::account::borrow_auth_info_v1(&self.id)
+public fun get_authenticator(self: &Account): &AuthenticatorFunctionRefV1<Account> {
+    borrow_auth_function_ref_v1(&self.id)
 }
 
 // ---------------------------------------- Utilities ----------------------------------------

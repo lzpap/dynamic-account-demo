@@ -1,6 +1,6 @@
 module isafe::dynamic_auth;
 
-use iota::account::{AuthenticatorInfoV1, create_auth_info_v1};
+use iota::authenticator_function::{create_auth_function_ref_v1, AuthenticatorFunctionRefV1};
 use iota::auth_context::AuthContext;
 use iota::dynamic_field;
 use iota::event::emit;
@@ -8,7 +8,7 @@ use iota::package_metadata::PackageMetadataV1;
 use isafe::account::{
     Account,
     ensure_tx_sender_is_account,
-    rotate_auth_info_v1
+    rotate_auth_function_v1
 };
 use isafe::members::{Self, Members, Member};
 use isafe::transactions::{Self, Transactions, add_approval};
@@ -37,7 +37,7 @@ public struct AccountCreatedEvent has copy, drop, store {
     members: vector<Member>,
     threshold: u64,
     guardian: vector<u8>,
-    authenticator: AuthenticatorInfoV1<Account>,
+    authenticator: AuthenticatorFunctionRefV1<Account>,
 }
 
 /// An event emitted when an account is rotated to use dynamic auth scheme.
@@ -46,7 +46,7 @@ public struct AccountRotatedEvent has copy, drop, store {
     members: vector<Member>,
     threshold: u64,
     guardian: vector<u8>,
-    authenticator: AuthenticatorInfoV1<Account>,
+    authenticator: AuthenticatorFunctionRefV1<Account>,
 }
 
 // An event emitted when a member is added to the account.
@@ -427,7 +427,7 @@ public fun remove_transaction(
 
 // Hot potato pattern for building a new account.
 public struct AccountBuilder {
-    authenticator: Option<AuthenticatorInfoV1<Account>>,
+    authenticator: Option<AuthenticatorFunctionRefV1<Account>>,
     // The members' addresses.
     members: vector<address>,
     // The members' weights.
@@ -481,7 +481,7 @@ public fun set_threshold_in_builder(mut builder: AccountBuilder, threshold: u64)
 // Adds an authenticator to the AccountBuilder.
 public fun add_authenticator_to_builder(
     mut builder: AccountBuilder,
-    authenticator: AuthenticatorInfoV1<Account>,
+    authenticator: AuthenticatorFunctionRefV1<Account>,
 ): AccountBuilder {
     builder.authenticator = option::some(authenticator);
     builder
@@ -564,7 +564,7 @@ public fun build(builder: AccountBuilder, account: &mut Account, ctx: &mut TxCon
     let members_vector = *members.as_vector();
 
     // First, let's rotate the previous authenticator to the new one.
-    rotate_auth_info_v1(account, authenticator, AppKey {});
+    rotate_auth_function_v1(account, authenticator, AppKey {});
 
     // Then add all the data as dynamic fields.
     account.add_dynamic_field(members_key(), members, AppKey {});
@@ -686,7 +686,7 @@ public fun setup_account(
     function: ascii::String,
     ctx: &mut TxContext,
 ) {
-    let authenticator = create_auth_info_v1(
+    let authenticator = create_auth_function_ref_v1(
         package_metadata,
         mod,
         function,
@@ -709,7 +709,7 @@ public entry fun create_account(
     package_metadata: &PackageMetadataV1,
     ctx: &mut TxContext,
 ) {
-    let authenticator = create_auth_info_v1(
+    let authenticator = create_auth_function_ref_v1(
         package_metadata,
         ascii::string(b"dynamic_auth"),
         ascii::string(b"authenticate"),
