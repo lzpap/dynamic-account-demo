@@ -57,9 +57,11 @@ public fun create_ticket_with_default_authenticator<T: drop>(
     allowed_authenticators.add(default_authenticator, true);
 
     // is the authenticator function from the module that the AppKey T belongs to?
-    let app_key_type = get<T>();
-    // TODO: verify that the authenticator function belongs to the module of app_key_type
-    // pending getters on AuthenticatorInfoV1
+    let app_key_type_name = get<T>();
+    // verify that the authenticator function belongs to the module of app_key_type
+    assert!(authenticator.package().to_address().to_ascii_string() == app_key_type_name.get_address(), EAppKeyNotAuthorized);
+    assert!(authenticator.module_name() == app_key_type_name.get_module(), EAppKeyNotAuthorized);
+    // pending getters on AuthenticatorFunctionRefV1
     AccountTicket {
         account: Account {
             id: object::new(ctx),
