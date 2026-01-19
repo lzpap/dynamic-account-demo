@@ -8,10 +8,10 @@ import { ObjectRef, Transaction } from "@iota/iota-sdk/transactions";
 import { useIotaClient } from "@iota/dapp-kit";
 import { fromBase58 } from "@iota/iota-sdk/utils";
 import { bcs } from "@iota/iota-sdk/bcs";
-import { uploadTx } from "@/lib/utils/uploadTx";
 import { queryKey } from "@/hooks/queryKey";
 import { useSignAndExecuteTransaction } from "@iota/dapp-kit";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTxServiceClientContext } from "@/contexts";
 
 interface ExecuteSettingChangesDialogProps {
   action: SettingsAction;
@@ -34,6 +34,7 @@ export function ExecuteSettingChangesDialog({
   const iotaClient = useIotaClient();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const queryClient = useQueryClient();
+  const txServiceClient = useTxServiceClientContext();
 
   async function prepareSettingsChange(): Promise<Transaction> {
     const tx = new Transaction();
@@ -173,15 +174,10 @@ export function ExecuteSettingChangesDialog({
               // no additional action needed for now
               break;
           }
-          const uploadTxResult = await uploadTx(
+          await txServiceClient.addTransaction(
             toBase64(toBeProposedTxBytes),
             description
           );
-          if (uploadTxResult.error) {
-            throw new Error(
-              "Failed to upload transaction to service: " + uploadTxResult.error
-            );
-          }
           // we just proposed a transaction that can change the account state, so we need to invalidate related queries
           queryClient.invalidateQueries();
           setStep(4); // 4a. Success

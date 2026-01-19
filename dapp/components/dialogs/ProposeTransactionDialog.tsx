@@ -7,6 +7,7 @@ import { bcs } from "@iota/iota-sdk/bcs";
 import { CONFIG } from "@/config/config";
 import { useISafeAccount } from "@/providers/ISafeAccountProvider";
 import { isTxAlreadyProposedError } from "@/lib/utils/errorResolution";
+import { useTxServiceClientContext } from "@/contexts";
 
 const TxAlreadyProposedError = "Transaction has already been proposed";
 
@@ -66,25 +67,7 @@ export function ProposeTransactionDialog({
   const { mutate: signAndExecuteTransaction, isPending } =
     useSignAndExecuteTransaction();
   const { isafeAccount } = useISafeAccount();
-
-  const uploadTransactionToService = async () => {
-    const response = await fetch("http://127.0.0.1:3031/add_transaction", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        tx_bytes: txBytes,
-        description: description,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload transaction: ${response}`);
-    }
-
-    return response.json();
-  };
+  const txServiceClient = useTxServiceClientContext();
 
   const handleTxBytesChange = (value: string) => {
     setTxBytes(value);
@@ -150,16 +133,15 @@ export function ProposeTransactionDialog({
           waitForTransaction: true,
         },
         {
-          onSuccess: async (result) => {
-            const transactionEffects = bcs.TransactionEffects.parse(
-              new Uint8Array(Buffer.from(result.effects, "base64"))
-            );
+          onSuccess: async () => {
             setProposalSuccess(true);
-            const uploadResult = await uploadTransactionToService();
-            if (uploadResult.error) {
+            try {
+              await txServiceClient.addTransaction(txBytes, description);
+            } catch (err) {
               setProposalSuccess(false);
+              const message = err instanceof Error ? err.message : String(err);
               setProposalError(
-                "Failed to upload transaction to service: " + uploadResult.error
+                "Failed to upload transaction to service: " + message
               );
             }
           },

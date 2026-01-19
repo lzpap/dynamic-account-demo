@@ -6,6 +6,7 @@ import { useIotaClient, useSignAndExecuteTransaction } from "@iota/dapp-kit";
 import { bcs } from "@iota/iota-sdk/bcs";
 import { CONFIG } from "@/config/config";
 import { useISafeAccount } from "@/providers/ISafeAccountProvider";
+import { useTxServiceClientContext } from "@/contexts";
 
 interface ApproveTransactionDialogProps {
   transactionDigest: string;
@@ -30,6 +31,7 @@ export function ApproveTransactionDialog({
   const { mutate: signAndExecuteTransaction, isPending } =
     useSignAndExecuteTransaction();
   const { isafeAccount } = useISafeAccount();
+  const txServiceClient = useTxServiceClientContext();
 
   // Fetch transaction bytes on mount
   useEffect(() => {
@@ -63,15 +65,7 @@ export function ApproveTransactionDialog({
       setLoadError(null);
 
       try {
-        const response = await fetch(
-          `http://127.0.0.1:3031/transaction/${transactionDigest}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch transaction: ${response.statusText}`);
-        }
-
-        const data = await response.json();
+        const data = await txServiceClient.getTransaction(transactionDigest);
         const bytes = data.bcs;
 
         if (!bytes) {
@@ -94,7 +88,7 @@ export function ApproveTransactionDialog({
     };
 
     fetchTransactionBytes();
-  }, [transactionDigest, client]);
+  }, [transactionDigest, client, txServiceClient]);
 
   const handleApprove = async () => {
     if (!transaction) return;

@@ -1,16 +1,16 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { queryKey } from "./queryKey";
+import { useTxServiceClientContext } from "@/contexts";
+import type { TransactionDetailsResponse } from "@/lib/clients/TxServiceClient";
 
 export function useGetTransactionDetails(transactionDigests: string[]) {
+  const txServiceClient = useTxServiceClientContext();
+
   return useQueries({
     queries: transactionDigests.map((digest) => ({
       queryKey: queryKey.transactionDetails(digest),
       queryFn: async () => {
-        // get transaction details from the custom indexer for the transaction digest
-        const response = await fetch(
-          `http://127.0.0.1:3031/transaction/${digest}`
-        ).then((res) => res.json()) as TransactionDetailsResponse;
-        return response;
+        return txServiceClient.getTransaction(digest);
       },
     })),
     combine: (results) => {
@@ -22,9 +22,4 @@ export function useGetTransactionDetails(transactionDigests: string[]) {
   });
 }
 
-export type TransactionDetailsResponse = {
-    bcs: string;
-    sender: string;
-    addedAt: number;
-    description: string;
-}
+export type { TransactionDetailsResponse } from "@/lib/clients/TxServiceClient";

@@ -7,10 +7,10 @@ import { ObjectRef, Transaction } from "@iota/iota-sdk/transactions";
 import { useIotaClient } from "@iota/dapp-kit";
 import { fromBase58 } from "@iota/iota-sdk/utils";
 import { bcs } from "@iota/iota-sdk/bcs";
-import { uploadTx } from "@/lib/utils/uploadTx";
 import { useSignAndExecuteTransaction } from "@iota/dapp-kit";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatIotaBalance } from "@/lib/utils/formatIotaBalance";
+import { useTxServiceClientContext } from "@/contexts";
 
 interface SendIotaDialogProps {
   accountAddress: string;
@@ -36,6 +36,7 @@ export function SendIotaDialog({
   const iotaClient = useIotaClient();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const queryClient = useQueryClient();
+  const txServiceClient = useTxServiceClientContext();
 
   // Validation
   const isAddressValid = targetAddress === "" || isValidIotaAddress(targetAddress);
@@ -118,15 +119,10 @@ export function SendIotaDialog({
       {
         onSuccess: async () => {
           const description = `Sending ${amount} IOTA(s) to ${targetAddress}`;
-          const uploadTxResult = await uploadTx(
+          await txServiceClient.addTransaction(
             toBase64(toBeProposedTxBytes),
             description
           );
-          if (uploadTxResult.error) {
-            throw new Error(
-              "Failed to upload transaction to service: " + uploadTxResult.error
-            );
-          }
           queryClient.invalidateQueries();
           setStep(4);
           setSuccess(true);

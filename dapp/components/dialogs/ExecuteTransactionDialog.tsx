@@ -4,6 +4,7 @@ import { useIotaClient } from "@iota/dapp-kit";
 import { Transaction } from "@iota/iota-sdk/transactions";
 import { fromBase64 } from "@iota/iota-sdk/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTxServiceClientContext } from "@/contexts";
 
 interface ExecuteTransactionDialogProps {
   transactionDigest: string;
@@ -29,6 +30,7 @@ export function ExecuteTransactionDialog({
   const [isExecuting, setIsExecuting] = useState(false);
   const client = useIotaClient();
   const queryClient = useQueryClient();
+  const txServiceClient = useTxServiceClientContext();
 
   // Fetch transaction bytes on mount
   useEffect(() => {
@@ -62,39 +64,24 @@ export function ExecuteTransactionDialog({
       setLoadError(null);
 
       try {
-        const response = await fetch(
-          `http://127.0.0.1:3031/transaction/${transactionDigest}`
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch transaction: ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
+        const data = await txServiceClient.getTransaction(transactionDigest);
         const bytes = data.bcs;
-        const decodedBytes = fromBase64(bytes);
-        const tx = Transaction.from(decodedBytes).getData();
-
-        // TODO: The signature we can craft ourselves if we have support for the new auth variant in the SDK
-        // instead we fetch it from the tx-service now as that can provide the correct signature
-        const sigResponse = await fetch(
-          `http://127.0.0.1:3031/derive_auth_signature/${tx.sender}`
-        );
-
-        if (!sigResponse.ok) {
-          throw new Error(
-            `Failed to fetch move authenticator signature field: ${sigResponse.statusText}`
-          );
-        }
-
-        const sigData = await sigResponse.json();
-        const sig = sigData.signature;
 
         if (!bytes) {
           throw new Error("Transaction bytes not found");
         }
+
+        const decodedBytes = fromBase64(bytes);
+        const tx = Transaction.from(decodedBytes).getData();
+
+        if (!tx.sender) {
+          throw new Error("Transaction sender not found");
+        }
+
+        // TODO: The signature we can craft ourselves if we have support for the new auth variant in the SDK
+        // instead we fetch it from the tx-service now as that can provide the correct signature
+        const sigData = await txServiceClient.deriveAuthSignature(tx.sender);
+        const sig = sigData.signature;
 
         if (!sig) {
           throw new Error("Transaction signature not found");
@@ -114,7 +101,7 @@ export function ExecuteTransactionDialog({
     };
 
     fetchTransactionBytes();
-  }, [transactionDigest, client]);
+  }, [transactionDigest, client, txServiceClient]);
 
   const handleExecute = async () => {
     if (!txBytes || !signature) return;
