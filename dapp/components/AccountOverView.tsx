@@ -7,10 +7,14 @@ import { Threshold } from "./Threshold";
 import { AccountActivity } from "./AccountActivity";
 import { generateAvatar } from "@/lib/utils/generateAvatar";
 import { AccountBalance } from "./AccountBalance";
+import { SendIotaDialog } from "./dialogs/SendIotaDialog";
+import { useGetAccountBalance } from "@/hooks/useGetAccountBalance";
 
 export function AccountOverView({ isafeAccount }: { isafeAccount: string }) {
   const avatarUrl = generateAvatar(isafeAccount, 80);
   const [copied, setCopied] = useState(false);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const { data: balance } = useGetAccountBalance(isafeAccount);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(isafeAccount);
@@ -54,6 +58,32 @@ export function AccountOverView({ isafeAccount }: { isafeAccount: string }) {
               </svg>
             )}
           </button>
+          <div className="relative group flex-shrink-0">
+            <button
+              onClick={() => setShowSendDialog(true)}
+              className="p-2 hover:bg-foreground/10 rounded-md transition-colors"
+              aria-label="Send funds from this account"
+              title="Send funds from this account"
+            >
+              <svg
+                className="w-5 h-5 text-foreground/60 rotate-45"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            </button>
+
+            <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs text-background opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              Send funds from this account
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[22rem_48rem] lg:justify-center gap-6">
@@ -88,6 +118,15 @@ export function AccountOverView({ isafeAccount }: { isafeAccount: string }) {
 
       {/* Full-width transactions */}
       <Transactions accountAddress={isafeAccount} />
+
+      {/* Send IOTA Dialog */}
+      {showSendDialog && balance && (
+        <SendIotaDialog
+          accountAddress={isafeAccount}
+          accountBalance={balance.totalBalance}
+          onClose={() => setShowSendDialog(false)}
+        />
+      )}
     </div>
   );
 }
