@@ -9,7 +9,7 @@ use iota_types::move_authenticator::MoveAuthenticator;
 use iota_types::quorum_driver_types::ExecuteTransactionRequestType;
 use iota_types::signature::GenericSignature;
 use iota_types::transaction::{
-    CallArg, ProgrammableTransaction, SenderSignedData, Transaction, TransactionDataAPI,
+    CallArg, SenderSignedData, Transaction, TransactionDataAPI,
 };
 use std::io::stdin;
 use std::io::{stdout, Write};

@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::time;
 
 use anyhow::Result;
 use diesel::{

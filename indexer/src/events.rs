@@ -1,5 +1,5 @@
 use fastcrypto::encoding::{Base64, Encoding};
-use iota_types::{base_types::IotaAddress, event::Event, transaction::Transaction, digests::TransactionDigest};
+use iota_types::{base_types::IotaAddress, event::Event};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
