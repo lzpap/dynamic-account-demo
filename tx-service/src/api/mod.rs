@@ -14,14 +14,16 @@ mod routes;
 #[derive(Clone)]
 pub struct ApiState {
     pub pool: DbConnectionPool,
+    pub node_url: String,
 }
 
 pub async fn start_api_server(
     pool: DbConnectionPool,
     port: u16,
     token: CancellationToken,
+    node_url: String,
 ) -> anyhow::Result<()> {
-    let state = ApiState { pool };
+    let state = ApiState { pool, node_url};
 
     let app = routes::routes().with_state(state);
 

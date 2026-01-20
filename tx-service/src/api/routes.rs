@@ -9,7 +9,7 @@ use axum::{
     routing::get,
     routing::post,
 };
-use chrono::{Local, Utc};
+use chrono::Utc;
 use fastcrypto::encoding::{Base64, Encoding};
 use iota_json_rpc_types::IotaObjectDataOptions;
 use iota_sdk::IotaClientBuilder;
@@ -30,12 +30,9 @@ use crate::{
         responses::{AddTxRequest, AddTxResponse, TransactionResponse},
     },
     db::{
-        queries,
-        schema::transactions::{description, digest},
+        queries
     },
 };
-
-const NODE_URL: &str = "http://127.0.0.1:9000";
 
 pub fn routes() -> Router<ApiState> {
     Router::new()
@@ -116,7 +113,7 @@ async fn derive_auth_signature(
         .map_err(|_| ApiError::BadRequest("Invalid IOTA address".to_string()))?;
 
     let iota_client = IotaClientBuilder::default()
-        .build(NODE_URL)
+        .build(&state.node_url)
         .await
         .map_err(|err| ApiError::Internal(anyhow::anyhow!(err)))?;
 

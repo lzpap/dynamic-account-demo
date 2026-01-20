@@ -59,7 +59,7 @@ impl Command {
                 // Spawn the auction API server
                 let handle = cancel_token.clone();
                 let database_pool = connection_pool.clone();
-                tasks.spawn(async move { start_api_server(database_pool, api_port, handle).await });
+                tasks.spawn(async move { start_api_server(database_pool, api_port, handle, node_url).await });
 
                 let mut exit_code = Ok(());
 
