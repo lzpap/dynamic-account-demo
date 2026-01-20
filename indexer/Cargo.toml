@@ -30,3 +30,6 @@ iota-json-rpc-types = { git = "https://github.com/iotaledger/iota", package = "i
 iota-metrics = { git = "https://github.com/iotaledger/iota", package = "iota-metrics" , branch = "vm-lang/aa-auth/8805-beta-feature-branch" }
 iota-types = { git = "https://github.com/iotaledger/iota", package = "iota-types", branch = "vm-lang/aa-auth/8805-beta-feature-branch"}
 iota-sdk = { git = "https://github.com/iotaledger/iota", package = "iota-sdk", branch = "vm-lang/aa-auth/8805-beta-feature-branch"}
+
+[features]
+default = []

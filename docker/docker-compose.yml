@@ -1,0 +1,81 @@
+services:
+  isafe-indexer:
+    container_name: isafe-indexer
+    build:
+      context: ../indexer/
+      dockerfile: ../indexer/docker/Dockerfile
+      args:
+        - GIT_REVISION
+        - BUILD_DATE
+        - PROFILE=release
+    image: isafe-indexer:dev
+    ports:
+      - 3030:3030 # REST API
+    tty: true
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    # depends_on:
+    #   local-network:
+    #     condition: service_healthy
+    volumes:
+      - indexer_progress:/data
+    environment:
+      - RUST_LOG=info,isafe_indexer=debug,iota_data_ingestion_core=warn
+      - ISAFE_PACKAGE_ADDRESS=${ISAFE_PACKAGE_ADDRESS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - "start"
+      - "--num-workers=1"
+      # Localnet values:
+      - "--node-url=http://host.docker.internal:9000"
+      - "--checkpoint-url=http://host.docker.internal:9000"
+      # Devnet values:
+      # - "--node-url=https://api.devnet.iota.cafe"
+      # - "--checkpoint-url=https://checkpoints.devnet.iota.cafe"
+      # Testnet values:
+      # - "--node-url=https://api.testnet.iota.cafe"
+      # - "--checkpoint-url=https://checkpoints.testnet.iota.cafe"
+      # Mainnet values:
+      # - "--node-url=https://api.mainnet.iota.cafe"
+      # - "--checkpoint-url=https://checkpoints.mainnet.iota.cafe"
+  tx-service:
+    container_name: tx-service
+    build:
+      context: ../tx-service
+      dockerfile: ../tx-service/docker/Dockerfile
+      args:
+        - GIT_REVISION
+        - BUILD_DATE
+        - PROFILE=release
+    image: tx-service:dev
+    ports:
+      - 3031:3031 # REST API
+    tty: true
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    environment:
+      - RUST_LOG=info,tx_service=debug
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - "start"
+      # Localnet values:
+      - "--node-url=http://host.docker.internal:9000"
+      # Devnet values:
+      # - "--node-url=https://api.devnet.iota.cafe"
+      # Testnet values:
+      # - "--node-url=https://api.testnet.iota.cafe"
+      # Mainnet values:
+      # - "--node-url=https://api.mainnet.iota.cafe"
+
+
+volumes:
+  indexer_progress:
+
