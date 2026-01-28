@@ -78,4 +78,3 @@ services:
 
 volumes:
   indexer_progress:
-

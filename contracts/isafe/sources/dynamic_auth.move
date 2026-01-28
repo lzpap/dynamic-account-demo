@@ -303,6 +303,8 @@ public fun authenticate(self: &Account, _: &AuthContext, ctx: &TxContext) {
         ETransactionDoesNotHaveSufficientApprovals,
     );
 
+    // Emit "TransactionExecutedEvent" with detailed data on approvers and their weights and current account configuration.
+
     let approvers = transactions(self).borrow(*ctx.digest()).approves();
     let mut approver_weights: vector<u64> = vector::empty();
 

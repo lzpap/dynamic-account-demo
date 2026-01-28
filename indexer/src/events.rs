@@ -77,7 +77,7 @@ pub struct AccountCreatedEvent {
     pub members: Vec<Member>,
     pub threshold: u64,
     pub guardian: Vec<u8>,
-    pub authenticator: AuthenticatorInfoV1,
+    pub authenticator: AuthenticatorFunctionRefV1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,7 +86,7 @@ pub struct AccountRotatedEvent {
     pub members: Vec<Member>,
     pub threshold: u64,
     pub guardian: Vec<u8>,
-    pub authenticator: AuthenticatorInfoV1,
+    pub authenticator: AuthenticatorFunctionRefV1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,7 +130,7 @@ pub struct Member {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AuthenticatorInfoV1 {
+pub struct AuthenticatorFunctionRefV1 {
     pub package: IotaAddress,
     pub module_name: String,
     pub function_name: String,
