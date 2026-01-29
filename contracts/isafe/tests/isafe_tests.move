@@ -1,11 +1,12 @@
 #[test_only]
 module isafe::isafe_tests;
 
-use iota::account::{create_auth_info_v1_for_testing, has_auth_info_v1, AuthenticatorInfoV1};
-use iota::auth_context;
 use iota::test_scenario::{Self, Scenario};
 use isafe::account::Account;
 use isafe::dynamic_auth;
+use iota::authenticator_function::AuthenticatorFunctionRefV1;
+use iota::authenticator_function::create_auth_function_ref_v1_for_testing;
+use iota::account::has_auth_function_ref_v1;
 
 #[error(code = 0)]
 const EInvalidMembersAndWeightsLength: vector<u8> =
@@ -32,7 +33,7 @@ fun test_creation() {
     // Verify that the account has the correct members and authenticator.
     assert!(dynamic_auth::members(&account).addresses() == vector[@0x1, @0x2, @0x3]);
     assert!(dynamic_auth::threshold(&account) == 3);
-    assert!(has_auth_info_v1(account.borrow_id()));
+    assert!(has_auth_function_ref_v1(account.borrow_id()));
     assert!(dynamic_auth::guardian(&account).borrow() == vector[0,1,2]);
 
     test_scenario::return_shared(account);
@@ -52,16 +53,16 @@ fun test_rotation() {
         option::some(vector[0, 1, 2]),
         dummy_authenticator(),
     );
-    // Advance the scenario to the next transaction where we immediately rotate the aaccount.
+    // Advance the scenario to the next transaction where we immediately rotate the account.
     scenario.next_tx(account_address);
     let mut account: Account = test_scenario::take_shared<Account>(&scenario);
 
     // destroy the old "dynamic authenticator" and replace it with a new one.
     dynamic_auth::destroy_account_data(&mut account, scenario.ctx());
 
-    let new_authenticator = create_auth_info_v1_for_testing(
-        @0xDEAD,
-        b"new_dummy".to_ascii_string(),
+    let new_authenticator = create_auth_function_ref_v1_for_testing(
+        @isafe,
+        b"dynamic_auth".to_ascii_string(),
         b"new_dummy_function".to_ascii_string(),
     );
     let builder = dynamic_auth::create_account_builder()
@@ -78,7 +79,7 @@ fun test_rotation() {
     // Verify that the account has the correct members and authenticator.
     assert!(dynamic_auth::members(&account).addresses() == vector[@0x4]);
     assert!(dynamic_auth::threshold(&account) == 4);
-    assert!(has_auth_info_v1(account.borrow_id()));
+    assert!(has_auth_function_ref_v1(account.borrow_id()));
     test_scenario::return_shared(account);
 
     scenario.end();
@@ -227,7 +228,7 @@ fun setup_account(
     weights: vector<u64>,
     threshold: u64,
     guardian: Option<vector<u8>>,
-    authenticator: AuthenticatorInfoV1<Account>,
+    authenticator: AuthenticatorFunctionRefV1<Account>,
 ): address {
     // Create an iSafe account with 3 members and an authenticator.
     let mut builder = dynamic_auth::create_account_builder().add_authenticator_to_builder(
@@ -248,11 +249,11 @@ fun setup_account(
     builder.build_and_publish(scenario.ctx())
 }
 
-fun dummy_authenticator(): AuthenticatorInfoV1<Account> {
-    create_auth_info_v1_for_testing( 
-        @0xABBA,
-        b"dummy".to_ascii_string(),
-        b"dummy_function".to_ascii_string(),
+fun dummy_authenticator(): AuthenticatorFunctionRefV1<Account> {
+    create_auth_function_ref_v1_for_testing(
+        @isafe,
+        b"dynamic_auth".to_ascii_string(),
+        b"authenticate".to_ascii_string(),
     )
 }
 

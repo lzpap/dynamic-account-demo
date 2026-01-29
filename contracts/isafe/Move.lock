@@ -2,25 +2,46 @@
 
 [move]
 version = 3
-manifest_digest = "60D05029EF6605CD8ADE6D6FAE9BD764E52F1C805F6AA760046FB4A638F864D3"
-deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+manifest_digest = "20D19C583F4B6988B54158EF1624F272D0C330059A344AEC721A8D48D42652D8"
+deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
 dependencies = [
   { id = "Iota", name = "Iota" },
+  { id = "IotaSystem", name = "IotaSystem" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "Stardust", name = "Stardust" },
 ]
 
 [[move.package]]
 id = "Iota"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "vm-lang/aa-auth/8805-beta-feature-branch", subdir = "crates/iota-framework/packages/iota-framework" }
+source = { git = "https://github.com/iotaledger/iota.git", rev = "f9c113ae42a639f65a944707d014b239bbe25544", subdir = "crates/iota-framework/packages/iota-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
 ]
 
 [[move.package]]
+id = "IotaSystem"
+source = { git = "https://github.com/iotaledger/iota.git", rev = "f9c113ae42a639f65a944707d014b239bbe25544", subdir = "crates/iota-framework/packages/iota-system" }
+
+dependencies = [
+  { id = "Iota", name = "Iota" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
+]
+
+[[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/iotaledger/iota.git", rev = "vm-lang/aa-auth/8805-beta-feature-branch", subdir = "crates/iota-framework/packages/move-stdlib" }
+source = { git = "https://github.com/iotaledger/iota.git", rev = "f9c113ae42a639f65a944707d014b239bbe25544", subdir = "crates/iota-framework/packages/move-stdlib" }
+
+[[move.package]]
+id = "Stardust"
+source = { git = "https://github.com/iotaledger/iota.git", rev = "f9c113ae42a639f65a944707d014b239bbe25544", subdir = "crates/iota-framework/packages/stardust" }
+
+dependencies = [
+  { id = "Iota", name = "Iota" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
+]
 
 [move.toolchain-version]
-compiler-version = "1.14.0-alpha"
+compiler-version = "1.16.0-alpha"
 edition = "2024"
 flavor = "iota"

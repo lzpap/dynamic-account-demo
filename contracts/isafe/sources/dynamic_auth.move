@@ -1,7 +1,6 @@
 module isafe::dynamic_auth;
 
 use iota::authenticator_function::{create_auth_function_ref_v1, AuthenticatorFunctionRefV1};
-use iota::auth_context::AuthContext;
 use iota::dynamic_field;
 use iota::event::emit;
 use iota::package_metadata::PackageMetadataV1;
@@ -694,7 +693,7 @@ public fun setup_account(
         function,
     );
 
-    let mut builder = create_account_builder()
+    let builder = create_account_builder()
         .add_authenticator_to_builder(authenticator)
         .add_member_to_builder(addr1, 1)
         .add_member_to_builder(addr2, 1)
